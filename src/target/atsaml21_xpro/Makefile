@@ -3,10 +3,12 @@ include $(TOP)/mk/common.mk
 
 OUTPUT = opengate
 
+CHIP=saml21j18a
+
 # soc sources
-SOC_DIR = $(TOP)/soc/microchip/saml21b
-SRC += $(SOC_DIR)/gcc/gcc/startup_saml21j18b.c \
-       $(SOC_DIR)/gcc/system_saml21j18b.c  \
+SOC_DIR = $(TOP)/soc/microchip/saml21a1
+SRC += $(SOC_DIR)/gcc/gcc/startup_$(CHIP).c \
+       $(SOC_DIR)/gcc/system_$(CHIP).c  \
 
 # target sources
 TARGET_DIR = $(TOP)/target/atsaml21_xpro
@@ -20,11 +22,8 @@ INCLUDE += -I$(SOC_DIR)/include
 INCLUDE += -I$(TOP)/soc/microchip/cmsis/Include
 
 # linker flags
-LDSCRIPT = $(SOC_DIR)/gcc/gcc/saml21j18b_flash.ld 
+LDSCRIPT = $(SOC_DIR)/gcc/gcc/$(CHIP)_flash.ld 
 X_LDFLAGS = -T$(LDSCRIPT) -Wl,-Map,$(OUTPUT).map -Wl,--gc-sections
-
-X_CFLAGS += -Wall
-X_CFLAGS += -Wstrict-prototypes
 
 .c.o:
 	$(X_GCC) $(INCLUDE) $(DEFINE) $(X_CFLAGS) -c $< -o $@
