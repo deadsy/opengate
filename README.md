@@ -17,6 +17,9 @@ SIM7600G-H
 https://www.waveshare.com/wiki/SIM7600E-H_4G_HAT
 Uses RPi pins 7,8,10,31
 
+SIM7600A-H
+IMEI: 868022030011576
+
 # standards
 
 1G - Analog
