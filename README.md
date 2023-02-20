@@ -1,5 +1,39 @@
 # opengate
-Gate Entry System
+A homebrew open source gate entry system.
+
+## Gate Systems
+
+A gate system has 3 components.
+
+* gate: the controlled barrier
+* gate opener: the motor that opens/closes the gate
+* gate entry system: the keypad/camera/telephone to control access
+
+A person who wants access approaches the entry system and:
+
+* enters a security code: if the code is correct they are granted access. 
+* calls a designated person(s): if the called person grants access they send some dtmf tones to open the gate.
+
+
+## Problem
+
+Gate entry systems are expensive to buy, install and operate.
+
+* Hardware $2000 
+* Installation $2000
+* Connectivity $50/month
+* Service $30/month
+
+In my case the gate system came with the property and uses a land line for connectivity.
+The only reason I need a land line is for the gate system. This costs around $160/month.
+
+## Solution
+
+
+
+
+
+
 
 # parts
 
