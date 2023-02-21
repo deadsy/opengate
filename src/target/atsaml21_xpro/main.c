@@ -8,6 +8,7 @@ SAML21 Xplained Pro Board (SAML21J18A)
 
 #include "soc.h"
 #include "debounce.h"
+#include "keyscan.h"
 
 #define DEBUG
 #include "logging.h"
@@ -26,6 +27,40 @@ static const struct gpio_info gpios[] = {
 #define NUM_GPIOS (sizeof(gpios) / sizeof(struct gpio_info))
 
 //-----------------------------------------------------------------------------
+// keyboard matrix scanning
+
+#define KEY_ROWS 5
+#define KEY_COLS 5
+
+static void key_down(int key) {
+	DBG("key down %d\r\n", key);
+}
+
+static void key_up(int key) {
+	DBG("key up %d\r\n", key);
+}
+
+static void select_row(int row) {
+	(void)row;
+}
+
+static uint32_t read_column(void) {
+	return 0;
+}
+
+static uint8_t key_state[KEY_ROWS * KEY_COLS];
+
+static struct keyscan_ctrl keys = {
+	.rows = KEY_ROWS,
+	.cols = KEY_COLS,
+	.state = key_state,
+	.key_down = key_down,
+	.key_up = key_up,
+	.select_row = select_row,
+	.read_column = read_column,
+};
+
+//-----------------------------------------------------------------------------
 // 1 millisecond global tick counter
 
 #define SYSTICK_PRIO 15U
@@ -40,6 +75,7 @@ void SysTick_Handler(void) {
 	// sample debounced inputs every 16 ms
 	if ((ticks & 15) == 0) {
 		debounce_isr();
+		keyscan_isr(&keys);
 	}
 	ticks++;
 }
@@ -125,6 +161,12 @@ int main(void) {
 	rc = debounce_init();
 	if (rc != 0) {
 		DBG("debounce_init failed %d\r\n", rc);
+		goto exit;
+	}
+
+	rc = keyscan_init(&keys);
+	if (rc != 0) {
+		DBG("keyscan_init failed %d\r\n", rc);
 		goto exit;
 	}
 
