@@ -61,6 +61,36 @@ static struct keyscan_ctrl keys = {
 };
 
 //-----------------------------------------------------------------------------
+// switch/button debouncing (called from the system tick isr)
+
+#define PUSH_BUTTON_BIT 0
+
+// handle a key down
+static void debounce_on_handler(uint32_t bits) {
+	if (bits & (1 << PUSH_BUTTON_BIT)) {
+		DBG("key down\r\n");
+	}
+}
+
+// handle a key up
+static void debounce_off_handler(uint32_t bits) {
+	if (bits & (1 << PUSH_BUTTON_BIT)) {
+		DBG("key up\r\n");
+	}
+}
+
+// map the gpio inputs to be debounced into the 32 bit debounce state
+static uint32_t debounce_input(void) {
+	return gpio_rd_inv(IO_SW0) << PUSH_BUTTON_BIT;
+}
+
+static struct debounce_ctrl debounce = {
+	.on = debounce_on_handler,
+	.off = debounce_off_handler,
+	.input = debounce_input,
+};
+
+//-----------------------------------------------------------------------------
 // 1 millisecond global tick counter
 
 #define SYSTICK_PRIO 15U
@@ -74,7 +104,7 @@ void SysTick_Handler(void) {
 	}
 	// sample debounced inputs every 16 ms
 	if ((ticks & 15) == 0) {
-		debounce_isr();
+		debounce_isr(&debounce);
 		keyscan_isr(&keys);
 	}
 	ticks++;
@@ -116,30 +146,6 @@ void msDelay(uint32_t delay) {
 }
 
 //-----------------------------------------------------------------------------
-// key debouncing (called from the system tick isr)
-
-#define PUSH_BUTTON_BIT 0
-
-// handle a key down
-void debounce_on_handler(uint32_t bits) {
-	if (bits & (1 << PUSH_BUTTON_BIT)) {
-		DBG("key down\r\n");
-	}
-}
-
-// handle a key up
-void debounce_off_handler(uint32_t bits) {
-	if (bits & (1 << PUSH_BUTTON_BIT)) {
-		DBG("key up\r\n");
-	}
-}
-
-// map the gpio inputs to be debounced into the 32 bit debounce state
-uint32_t debounce_input(void) {
-	return gpio_rd_inv(IO_SW0) << PUSH_BUTTON_BIT;
-}
-
-//-----------------------------------------------------------------------------
 
 int main(void) {
 	int rc;
@@ -158,7 +164,7 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = debounce_init();
+	rc = debounce_init(&debounce);
 	if (rc != 0) {
 		DBG("debounce_init failed %d\r\n", rc);
 		goto exit;

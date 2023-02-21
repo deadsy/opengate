@@ -33,6 +33,10 @@ Key Matrix Scanning
 //-----------------------------------------------------------------------------
 
 void keyscan_isr(struct keyscan_ctrl *ctrl) {
+
+	if (!ctrl->ready) {
+		return;
+	}
 	// read the column lines
 	uint32_t col = ctrl->read_column();
 	int key = ctrl->row;
@@ -98,10 +102,7 @@ void keyscan_isr(struct keyscan_ctrl *ctrl) {
 		key += ctrl->rows;
 	}
 	// select the next row
-	ctrl->row++;
-	if (ctrl->row == ctrl->rows) {
-		ctrl->row = 0;
-	}
+	ctrl->row = (ctrl->row == ctrl->rows - 1) ? 0 : ctrl->row + 1;
 	ctrl->select_row(ctrl->row);
 }
 
@@ -125,7 +126,8 @@ int keyscan_init(struct keyscan_ctrl *ctrl) {
 	}
 	memset(ctrl->state, 0, ctrl->cols * ctrl->rows);
 	ctrl->row = 0;
-	ctrl->select_row(ctrl->row);
+	ctrl->select_row(0);
+	ctrl->ready = 1;
 	return 0;
 }
 

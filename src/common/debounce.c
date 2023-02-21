@@ -20,78 +20,52 @@ an off (DEBOUNCE_COUNT 0's).
 #include "debounce.h"
 
 //-----------------------------------------------------------------------------
-
-#define DEBOUNCE_COUNT 4
-
-struct debounce_ctrl {
-	uint32_t sample[DEBOUNCE_COUNT];
-	uint32_t state;
-	int idx;
-};
-
-static struct debounce_ctrl debounce;
-static int debounce_ready = 0;
-
-//-----------------------------------------------------------------------------
-// null on/off handlers - to be provided by other code
-
-__attribute__((weak))
-void debounce_on_handler(uint32_t bits) {
-	(void)bits;
-}
-
-__attribute__((weak))
-void debounce_off_handler(uint32_t bits) {
-	(void)bits;
-}
-
-//-----------------------------------------------------------------------------
-// return the de-bounced state of the switches
-
-static uint32_t debounce_rd(void) {
-	uint32_t state = 0;
-	int i;
-	for (i = 0; i < DEBOUNCE_COUNT; i++) {
-		state |= debounce.sample[i];
-	}
-	return state;
-}
-
-//-----------------------------------------------------------------------------
 // read and store the current switch state
 // this is called periodically (10-20ms) from a timer ISR
 
-void debounce_isr(void) {
-	struct debounce_ctrl *db = &debounce;
-	uint32_t state;
+void debounce_isr(struct debounce_ctrl *ctrl) {
 
-	if (!debounce_ready) {
+	if (!ctrl->ready) {
 		return;
 	}
 	// read and store the current input
-	db->sample[db->idx] = debounce_input();
-	db->idx = (db->idx == DEBOUNCE_COUNT - 1) ? 0 : db->idx + 1;
+	ctrl->sample[ctrl->idx] = ctrl->input();
+	ctrl->idx = (ctrl->idx == DEBOUNCE_COUNT - 1) ? 0 : ctrl->idx + 1;
 
-	state = debounce_rd();
+	// OR the samples for the new state
+	uint32_t state = 0;
+	for (int i = 0; i < DEBOUNCE_COUNT; i++) {
+		state |= ctrl->sample[i];
+	}
 
-	if (state != db->state) {
-		uint32_t on_bits = ~db->state & state;	// 0 to 1: switch is now ON
-		uint32_t off_bits = db->state & ~state;	// 1 to 0: switch is now OFF
-		if (on_bits) {
-			debounce_on_handler(on_bits);
+	if (state != ctrl->state) {
+		uint32_t on_bits = ~ctrl->state & state;	// 0 to 1: switch is now ON
+		uint32_t off_bits = ctrl->state & ~state;	// 1 to 0: switch is now OFF
+		if (on_bits && ctrl->on) {
+			ctrl->on(on_bits);
 		}
-		if (off_bits) {
-			debounce_off_handler(off_bits);
+		if (off_bits && ctrl->off) {
+			ctrl->off(off_bits);
 		}
-		db->state = state;
+		ctrl->state = state;
 	}
 }
 
 //-----------------------------------------------------------------------------
 
-int debounce_init(void) {
-	memset(&debounce, 0, sizeof(struct debounce_ctrl));
-	debounce_ready = 1;
+int debounce_init(struct debounce_ctrl *ctrl) {
+	if (ctrl == NULL) {
+		return -1;
+	}
+	if (ctrl->input == NULL) {
+		return -2;
+	}
+	for (int i = 0; i < DEBOUNCE_COUNT; i++) {
+		ctrl->sample[i] = 0;
+	}
+	ctrl->state = 0;
+	ctrl->idx = 0;
+	ctrl->ready = 1;
 	return 0;
 }
 

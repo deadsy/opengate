@@ -16,6 +16,7 @@ Key Matrix Scanning
 //-----------------------------------------------------------------------------
 
 struct keyscan_ctrl {
+	int ready;		// initialised
 	int rows;		// number of matrix rows
 	int cols;		// number of matrix cols
 	int row;		// current row
