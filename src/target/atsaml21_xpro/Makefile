@@ -27,6 +27,10 @@ SRC += $(COMMON_DIR)/logging.c \
 	$(COMMON_DIR)/rtt/SEGGER_RTT.c \
 	$(COMMON_DIR)/rtt/SEGGER_RTT_printf.c \
 
+# driver sources
+DRIVER_DIR = $(TOP)/drivers
+SRC += $(DRIVER_DIR)/hd44780.c \
+
 OBJ = $(patsubst %.c, %.o, $(SRC))
 
 # include paths
@@ -36,6 +40,7 @@ INCLUDE += -I$(SOC_DIR)/cmsis/Include
 INCLUDE += -I$(SOC_DIR)/lib
 INCLUDE += -I$(COMMON_DIR)
 INCLUDE += -I$(COMMON_DIR)/rtt
+INCLUDE += -I$(DRIVER_DIR)
 
 # linker flags
 LDSCRIPT = $(CHIP_DIR)/gcc/gcc/$(CHIP)_flash.ld 

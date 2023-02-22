@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Format the project source code per the standard (linux style)
 
 import glob
@@ -10,6 +10,7 @@ src_dirs = (
   'target/maduino_zero',
   'soc/microchip/lib',
   'common',
+  'drivers',
 )
 
 src_filter_out = (
