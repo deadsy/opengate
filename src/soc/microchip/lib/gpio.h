@@ -60,6 +60,15 @@ static inline void gpio_toggle(int n) {
 	PORT_REGS->GROUP[GPIO_PORT(n)].PORT_OUTTGL = 1 << GPIO_PIN(n);
 }
 
+static inline void gpio_rmw(int port, uint32_t set, uint32_t clr) {
+	uint32_t save = disableIRQ();
+	uint32_t val = PORT_REGS->GROUP[port].PORT_OUT;
+	val &= ~clr;
+	val |= set;
+	PORT_REGS->GROUP[port].PORT_OUT = val;
+	restoreIRQ(save);
+}
+
 static inline int gpio_rd(int n) {
 	return (PORT_REGS->GROUP[GPIO_PORT(n)].PORT_IN >> GPIO_PIN(n)) & 1;
 }
