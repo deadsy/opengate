@@ -13,6 +13,7 @@ ATSAM SoC top-level include file
 
 #include "sam.h"
 #include "gpio.h"
+#include "usart.h"
 
 //-----------------------------------------------------------------------------
 

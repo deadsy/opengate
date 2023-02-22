@@ -8,7 +8,7 @@ CHIP=saml21j18a
 # chip sources
 CHIP_DIR = $(SOC_DIR)/saml21a1
 SRC += $(CHIP_DIR)/gcc/gcc/startup_$(CHIP).c \
-       $(CHIP_DIR)/gcc/system_$(CHIP).c  \
+	$(CHIP_DIR)/gcc/system_$(CHIP).c  \
 
 # target sources
 TARGET_DIR = $(TOP)/target/atsaml21_xpro
@@ -17,6 +17,7 @@ SRC += $(TARGET_DIR)/main.c \
 # soc sources
 SOC_DIR = $(TOP)/soc/microchip
 SRC += $(SOC_DIR)/lib/gpio.c \
+	$(SOC_DIR)/lib/usart.c \
 
 # common sources
 COMMON_DIR = $(TOP)/common
