@@ -20,8 +20,20 @@ SAML21 Xplained Pro Board (SAML21J18A)
 #define IO_SW0  GPIO_NUM(PORTA, 2)
 
 static const struct gpio_info gpios[] = {
+	// led
 	{IO_LED0, GPIO_OUT, 0, 0, 0},
+	// push button
 	{IO_SW0, GPIO_IN, 1, 0, GPIO_PULLEN | GPIO_INEN},	// pull-up
+	// keyscan rows
+	{GPIO_NUM(PORTA, 4), GPIO_OUT, 0, 0, 0},
+	{GPIO_NUM(PORTA, 5), GPIO_OUT, 0, 0, 0},
+	{GPIO_NUM(PORTA, 6), GPIO_OUT, 0, 0, 0},
+	{GPIO_NUM(PORTA, 7), GPIO_OUT, 0, 0, 0},
+	// keyscan cols
+	{GPIO_NUM(PORTA, 10), GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+	{GPIO_NUM(PORTA, 11), GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+	{GPIO_NUM(PORTA, 12), GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+	{GPIO_NUM(PORTA, 13), GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
 };
 
 #define NUM_GPIOS (sizeof(gpios) / sizeof(struct gpio_info))
@@ -29,8 +41,8 @@ static const struct gpio_info gpios[] = {
 //-----------------------------------------------------------------------------
 // keyboard matrix scanning
 
-#define KEY_ROWS 5
-#define KEY_COLS 5
+#define KEY_ROWS 4
+#define KEY_COLS 4
 
 static void key_down(int key) {
 	DBG("key down %d\r\n", key);
@@ -40,12 +52,19 @@ static void key_up(int key) {
 	DBG("key up %d\r\n", key);
 }
 
-static void select_row(int row) {
-	(void)row;
+static void set_row(int row) {
+	// rows on PA 4,5,6,7
+	gpio_set(GPIO_NUM(PORTA, row + 4));
 }
 
-static uint32_t read_column(void) {
-	return 0;
+static void clr_row(int row) {
+	// rows on PA 4,5,6,7
+	gpio_clr(GPIO_NUM(PORTA, row + 4));
+}
+
+static uint32_t read_col(void) {
+	// cols on PA 10,11, 12, 13
+	return (gpio_rd_input(PORTA) >> 10) & 15;
 }
 
 static uint8_t key_state[KEY_ROWS * KEY_COLS];
@@ -54,10 +73,11 @@ static struct keyscan_ctrl keys = {
 	.rows = KEY_ROWS,
 	.cols = KEY_COLS,
 	.state = key_state,
-	.key_down = key_down,
+	.key_dn = key_down,
 	.key_up = key_up,
-	.select_row = select_row,
-	.read_column = read_column,
+	.clr_row = clr_row,
+	.set_row = set_row,
+	.read_col = read_col,
 };
 
 //-----------------------------------------------------------------------------
@@ -105,6 +125,9 @@ void SysTick_Handler(void) {
 	// sample debounced inputs every 16 ms
 	if ((ticks & 15) == 0) {
 		debounce_isr(&debounce);
+	}
+	// scan the keyboard every 8 ms
+	if ((ticks & 7) == 0) {
 		keyscan_isr(&keys);
 	}
 	ticks++;
@@ -178,7 +201,7 @@ int main(void) {
 
 	unsigned int i = 0;
 	while (1) {
-		DBG("loop %d\r\n", i);
+		//DBG("loop %d\r\n", i);
 		msDelay(1000);
 		i++;
 	}

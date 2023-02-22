@@ -22,9 +22,9 @@ GPIO Control for the ATSAM Devices
 #define PORTA 0
 #define PORTB 1
 
-#define GPIO_NUM(port, pin) ((port << 5) | (pin & 31))
-#define GPIO_PIN(n) (n & 31)
-#define GPIO_PORT(n) ((n >> 5) & 1)
+#define GPIO_NUM(port, pin) (((port) << 5) | ((pin) & 31))
+#define GPIO_PIN(n) ((n) & 31)
+#define GPIO_PORT(n) (((n) >> 5) & 1)
 
 #define GPIO_IN 0		// input
 #define GPIO_OUT 1		// ouput
@@ -66,6 +66,10 @@ static inline int gpio_rd(int n) {
 
 static inline int gpio_rd_inv(int n) {
 	return (~(PORT_REGS->GROUP[GPIO_PORT(n)].PORT_IN) >> GPIO_PIN(n)) & 1;
+}
+
+static inline uint32_t gpio_rd_input(int port) {
+	return PORT_REGS->GROUP[port].PORT_IN;
 }
 
 static inline void gpio_dirn_in(int n) {

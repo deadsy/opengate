@@ -27,8 +27,8 @@ Key Matrix Scanning
 #define KEY_STATE(x) (ctrl->state[x] & (7 << 5))
 
 // debounce counts
-#define DEBOUNCE_COUNT_DOWN     2
-#define DEBOUNCE_COUNT_UP       4
+#define DEBOUNCE_COUNT_DOWN 1
+#define DEBOUNCE_COUNT_UP 3
 
 //-----------------------------------------------------------------------------
 
@@ -38,7 +38,7 @@ void keyscan_isr(struct keyscan_ctrl *ctrl) {
 		return;
 	}
 	// read the column lines
-	uint32_t col = ctrl->read_column();
+	uint32_t col = ctrl->read_col();
 	int key = ctrl->row;
 
 	for (int i = 0; i < ctrl->cols; i++) {
@@ -52,8 +52,8 @@ void keyscan_isr(struct keyscan_ctrl *ctrl) {
 					int n = KEY_COUNT(key);
 					if (n >= DEBOUNCE_COUNT_DOWN) {
 						ctrl->state[key] = KEY_STATE_DOWN;
-						if (ctrl->key_down) {
-							ctrl->key_down(key);
+						if (ctrl->key_dn) {
+							ctrl->key_dn(key);
 						}
 					} else {
 						ctrl->state[key] = KEY_STATE_WAIT4_DOWN | (n + 1);
@@ -102,8 +102,9 @@ void keyscan_isr(struct keyscan_ctrl *ctrl) {
 		key += ctrl->rows;
 	}
 	// select the next row
+	ctrl->clr_row(ctrl->row);
 	ctrl->row = (ctrl->row == ctrl->rows - 1) ? 0 : ctrl->row + 1;
-	ctrl->select_row(ctrl->row);
+	ctrl->set_row(ctrl->row);
 }
 
 //-----------------------------------------------------------------------------
@@ -118,15 +119,15 @@ int keyscan_init(struct keyscan_ctrl *ctrl) {
 	if (ctrl->state == NULL) {
 		return -3;
 	}
-	if (ctrl->select_row == NULL) {
+	if (ctrl->clr_row == NULL || ctrl->set_row == NULL) {
 		return -4;
 	}
-	if (ctrl->read_column == NULL) {
+	if (ctrl->read_col == NULL) {
 		return -5;
 	}
 	memset(ctrl->state, 0, ctrl->cols * ctrl->rows);
 	ctrl->row = 0;
-	ctrl->select_row(0);
+	ctrl->set_row(0);
 	ctrl->ready = 1;
 	return 0;
 }

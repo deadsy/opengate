@@ -21,10 +21,11 @@ struct keyscan_ctrl {
 	int cols;		// number of matrix cols
 	int row;		// current row
 	uint8_t *state;		// row x col bytes for key state
-	void (*key_down)(int key);	// provided key down handler (optional)
+	void (*key_dn)(int key);	// provided key down handler (optional)
 	void (*key_up)(int key);	// provided key up handler (optional)
-	void (*select_row)(int row);	// provided function to select a row
-	 uint32_t(*read_column) (void);	// provided function to read a column
+	void (*clr_row)(int row);	// provided function to clear a row line
+	void (*set_row)(int row);	// provided function to set a row line
+	 uint32_t(*read_col) (void);	// provided function to read a column
 };
 
 int keyscan_init(struct keyscan_ctrl *ctrl);
