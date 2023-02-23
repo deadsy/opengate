@@ -27,19 +27,31 @@ https://en.wikipedia.org/wiki/Hitachi_HD44780_LCD_controller
 
 //-----------------------------------------------------------------------------
 
-static void hd44780_wr(struct hd44780_ctrl *ctrl, uint8_t val) {
+static void hd44780_wr4(struct hd44780_ctrl *ctrl, uint8_t val) {
 	ctrl->clk_hi();
-	ctrl->wr4(val);
+	ctrl->wr(val & 15);
 	usDelay(5);
 	ctrl->clk_lo();
 	usDelay(50);
+}
+
+static void hd44780_wr(struct hd44780_ctrl *ctrl, uint8_t val) {
+	if (ctrl->mode == HD44780_MODE4) {
+		hd44780_wr4(ctrl, val >> 4);	// hi nybble
+		hd44780_wr4(ctrl, val);	// lo nybble
+	} else {
+		ctrl->clk_hi();
+		ctrl->wr(val);
+		usDelay(5);
+		ctrl->clk_lo();
+		usDelay(50);
+	}
 }
 
 // write 8 bits to the instruction/command register
 static void hd44780_cmd(struct hd44780_ctrl *ctrl, uint8_t cmd) {
 	ctrl->rs_lo();
 	usDelay(5);
-	hd44780_wr(ctrl, cmd >> 4);
 	hd44780_wr(ctrl, cmd);
 }
 
@@ -47,7 +59,6 @@ static void hd44780_cmd(struct hd44780_ctrl *ctrl, uint8_t cmd) {
 static void hd44780_char(struct hd44780_ctrl *ctrl, uint8_t ch) {
 	ctrl->rs_hi();
 	usDelay(5);
-	hd44780_wr(ctrl, ch >> 4);
 	hd44780_wr(ctrl, ch);
 }
 
@@ -60,6 +71,37 @@ void hd44780_foo(struct hd44780_ctrl *ctrl) {
 
 //-----------------------------------------------------------------------------
 
+// 4-bit mode initialisation
+static void hd44780_4bit_init(struct hd44780_ctrl *ctrl) {
+	msDelay(20);
+	hd44780_wr4(ctrl, 3);
+	msDelay(10);
+	hd44780_wr4(ctrl, 3);
+	msDelay(1);
+	hd44780_wr4(ctrl, 3);
+	hd44780_wr4(ctrl, 2);
+
+	hd44780_cmd(ctrl, LCD_FUNCTION_SET);
+	hd44780_cmd(ctrl, LCD_DISPLAY_ON);
+	hd44780_cmd(ctrl, LCD_DISPLAY_CLEAR);
+	msDelay(2);
+
+	hd44780_cmd(ctrl, LCD_ENTRY_MODE_SET);
+}
+
+// 8-bit mode initialisation
+static void hd44780_8bit_init(struct hd44780_ctrl *ctrl) {
+
+	msDelay(20);
+	hd44780_wr(ctrl, 0x30);
+	msDelay(10);
+	hd44780_wr(ctrl, 0x30);
+	msDelay(1);
+	hd44780_wr(ctrl, 0x30);
+
+	// TODO
+}
+
 int hd44780_init(struct hd44780_ctrl *ctrl) {
 	if (ctrl == NULL) {
 		return -1;
@@ -70,24 +112,18 @@ int hd44780_init(struct hd44780_ctrl *ctrl) {
 	if (ctrl->rs_hi == NULL || ctrl->rs_lo == NULL) {
 		return -3;
 	}
-	if (ctrl->wr4 == NULL) {
+	if (ctrl->wr == NULL) {
 		return -4;
 	}
-	// 4 bit setup as per hd44780 datasheet
-	msDelay(20);
-	hd44780_wr(ctrl, 3);
-	msDelay(10);
-	hd44780_wr(ctrl, 3);
-	msDelay(1);
-	hd44780_wr(ctrl, 3);
-	hd44780_wr(ctrl, 2);
-
-	hd44780_cmd(ctrl, LCD_FUNCTION_SET);
-	hd44780_cmd(ctrl, LCD_DISPLAY_ON);
-	hd44780_cmd(ctrl, LCD_DISPLAY_CLEAR);
-	msDelay(2);
-	hd44780_cmd(ctrl, LCD_ENTRY_MODE_SET);
-
+	// initialise the display
+	if (ctrl->mode == HD44780_MODE4) {
+		hd44780_4bit_init(ctrl);
+	} else if (ctrl->mode == HD44780_MODE8) {
+		hd44780_8bit_init(ctrl);
+	} else {
+		return -5;
+	}
+	// clear the shadow area
 	memset(ctrl->shadow, 0, ctrl->rows * ctrl->cols);
 	return 0;
 }

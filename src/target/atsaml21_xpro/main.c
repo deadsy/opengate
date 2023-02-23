@@ -9,6 +9,7 @@ SAML21 Xplained Pro Board (SAML21J18A)
 #include "soc.h"
 #include "debounce.h"
 #include "keyscan.h"
+#include "hd44780.h"
 
 #define DEBUG
 #include "logging.h"
@@ -19,21 +20,38 @@ SAML21 Xplained Pro Board (SAML21J18A)
 #define IO_LED0 GPIO_NUM(PORTB, 10)
 #define IO_SW0  GPIO_NUM(PORTA, 2)
 
+#define IO_KEY_ROW0  GPIO_NUM(PORTA, 4)
+#define IO_KEY_COL0  GPIO_NUM(PORTA, 10)
+
+#define IO_LCD_CLK  GPIO_NUM(PORTA, 14)
+#define IO_LCD_RS  GPIO_NUM(PORTA, 15)
+#define IO_LCD_D0  GPIO_NUM(PORTB, 0)
+
+// num, dir, out, mux, cfg
 static const struct gpio_info gpios[] = {
 	// led
 	{IO_LED0, GPIO_OUT, 0, 0, 0},
 	// push button
 	{IO_SW0, GPIO_IN, 1, 0, GPIO_PULLEN | GPIO_INEN},	// pull-up
-	// keyscan rows
-	{GPIO_NUM(PORTA, 4), GPIO_OUT, 0, 0, 0},
-	{GPIO_NUM(PORTA, 5), GPIO_OUT, 0, 0, 0},
-	{GPIO_NUM(PORTA, 6), GPIO_OUT, 0, 0, 0},
-	{GPIO_NUM(PORTA, 7), GPIO_OUT, 0, 0, 0},
-	// keyscan cols
-	{GPIO_NUM(PORTA, 10), GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
-	{GPIO_NUM(PORTA, 11), GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
-	{GPIO_NUM(PORTA, 12), GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
-	{GPIO_NUM(PORTA, 13), GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+	// keyscan rows (output)
+	{IO_KEY_ROW0 + 0, GPIO_OUT, 0, 0, 0},
+	{IO_KEY_ROW0 + 1, GPIO_OUT, 0, 0, 0},
+	{IO_KEY_ROW0 + 2, GPIO_OUT, 0, 0, 0},
+	{IO_KEY_ROW0 + 3, GPIO_OUT, 0, 0, 0},
+	// keyscan cols (input)
+	{IO_KEY_COL0 + 0, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+	{IO_KEY_COL0 + 1, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+	{IO_KEY_COL0 + 2, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+	{IO_KEY_COL0 + 3, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+
+	// lcd control
+	{IO_LCD_CLK, GPIO_OUT, 0, 0, 0},
+	{IO_LCD_RS, GPIO_OUT, 0, 0, 0},
+	// lcd data
+	{IO_LCD_D0 + 0, GPIO_OUT, 0, 0, 0},
+	{IO_LCD_D0 + 1, GPIO_OUT, 0, 0, 0},
+	{IO_LCD_D0 + 2, GPIO_OUT, 0, 0, 0},
+	{IO_LCD_D0 + 3, GPIO_OUT, 0, 0, 0},
 };
 
 #define NUM_GPIOS (sizeof(gpios) / sizeof(struct gpio_info))
@@ -53,18 +71,20 @@ static void key_up(int key) {
 }
 
 static void set_row(int row) {
-	// rows on PA 4,5,6,7
-	gpio_set(GPIO_NUM(PORTA, row + 4));
+	gpio_set(IO_KEY_ROW0 + row);
 }
 
 static void clr_row(int row) {
-	// rows on PA 4,5,6,7
-	gpio_clr(GPIO_NUM(PORTA, row + 4));
+	gpio_clr(IO_KEY_ROW0 + row);
 }
+
+#define KEY_COL_PORT GPIO_PORT(IO_KEY_COL0)
+#define KEY_COL_SHIFT GPIO_PIN(IO_KEY_COL0)
+#define KEY_COL_MASK ((1 << KEY_COLS) - 1)
 
 static uint32_t read_col(void) {
 	// cols on PA 10,11, 12, 13
-	return (gpio_rd_input(PORTA) >> 10) & 15;
+	return (gpio_rd_input(KEY_COL_PORT) >> KEY_COL_SHIFT) & KEY_COL_MASK;
 }
 
 static uint8_t key_state[KEY_ROWS * KEY_COLS];
@@ -108,6 +128,49 @@ static struct debounce_ctrl debounce = {
 	.on = debounce_on_handler,
 	.off = debounce_off_handler,
 	.input = debounce_input,
+};
+
+//-----------------------------------------------------------------------------
+// LCD
+
+#define LCD_ROWS 1
+#define LCD_COLS 20
+
+static void lcd_clk_hi(void) {
+	gpio_set(IO_LCD_CLK);
+}
+
+static void lcd_clk_lo(void) {
+	gpio_clr(IO_LCD_CLK);
+}
+
+static void lcd_rs_hi(void) {
+	gpio_set(IO_LCD_RS);
+}
+
+static void lcd_rs_lo(void) {
+	gpio_clr(IO_LCD_RS);
+}
+
+#define LCD_DATA_PORT GPIO_PORT(IO_LCD_D0)
+#define LCD_DATA_SHIFT GPIO_PIN(IO_LCD_D0)
+
+static void lcd_wr(uint8_t val) {
+	gpio_rmw(LCD_DATA_PORT, val << LCD_DATA_SHIFT, 15 << LCD_DATA_SHIFT);
+}
+
+static uint8_t lcd_shadow[LCD_ROWS * LCD_COLS];
+
+static struct hd44780_ctrl lcd = {
+	.mode = HD44780_MODE4,
+	.rows = LCD_ROWS,
+	.cols = LCD_COLS,
+	.shadow = lcd_shadow,
+	.clk_hi = lcd_clk_hi,
+	.clk_lo = lcd_clk_lo,
+	.rs_hi = lcd_rs_hi,
+	.rs_lo = lcd_rs_lo,
+	.wr = lcd_wr,
 };
 
 //-----------------------------------------------------------------------------
@@ -169,6 +232,12 @@ int main(void) {
 	rc = keyscan_init(&keys);
 	if (rc != 0) {
 		DBG("keyscan_init failed %d\r\n", rc);
+		goto exit;
+	}
+
+	rc = hd44780_init(&lcd);
+	if (rc != 0) {
+		DBG("hd44780_init failed %d\r\n", rc);
 		goto exit;
 	}
 
