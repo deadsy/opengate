@@ -18,6 +18,7 @@ SRC += $(TARGET_DIR)/main.c \
 SOC_DIR = $(TOP)/soc/microchip
 SRC += $(SOC_DIR)/lib/gpio.c \
 	$(SOC_DIR)/lib/usart.c \
+	$(SOC_DIR)/lib/delay.c \
 
 # common sources
 COMMON_DIR = $(TOP)/common
@@ -59,9 +60,11 @@ DEFINE += -DSTDIO_RTT
 all: $(OBJ)
 	$(X_GCC) $(X_CFLAGS) $(X_LDFLAGS) $(OBJ) -o $(OUTPUT)
 	$(X_OBJCOPY) -O ihex $(OUTPUT) $(OUTPUT).hex
+	$(X_OBJCOPY) -O binary $(OUTPUT) $(OUTPUT).bin
 
 clean:
 	-rm $(OBJ)	
 	-rm $(OUTPUT)
 	-rm $(OUTPUT).map	
 	-rm $(OUTPUT).hex	
+	-rm $(OUTPUT).bin	

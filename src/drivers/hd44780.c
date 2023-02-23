@@ -10,12 +10,8 @@ https://en.wikipedia.org/wiki/Hitachi_HD44780_LCD_controller
 
 #include <string.h>
 
+#include "soc.h"
 #include "hd44780.h"
-
-//-----------------------------------------------------------------------------
-
-void usDelay(int n);
-void msDelay(int n);
 
 //-----------------------------------------------------------------------------
 

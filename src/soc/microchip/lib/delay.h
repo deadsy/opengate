@@ -1,13 +1,13 @@
 //-----------------------------------------------------------------------------
 /*
 
-IRQ Control
+Polled Delays
 
 */
 //-----------------------------------------------------------------------------
 
-#ifndef IRQ_H
-#define IRQ_H
+#ifndef DELAY_H
+#define DELAY_H
 
 #ifndef SOC_H
 #warning "please include this file using the toplevel soc.h"
@@ -15,18 +15,23 @@ IRQ Control
 
 //-----------------------------------------------------------------------------
 
-static inline uint32_t disableIRQ(void) {
-	uint32_t mask = __get_PRIMASK();
-	__disable_irq();
-	return mask;
+extern volatile uint32_t globalTick;
+
+static inline void incTick(void) {
+	globalTick++;
 }
 
-static inline void restoreIRQ(uint32_t mask) {
-	__set_PRIMASK(mask);
+static inline uint32_t getTick(void) {
+	return globalTick;
 }
 
 //-----------------------------------------------------------------------------
 
-#endif				// IRQ_H
+void msDelay(unsigned long msecs);
+void usDelay(unsigned long usecs);
+
+//-----------------------------------------------------------------------------
+
+#endif				// DELAY_H
 
 //-----------------------------------------------------------------------------

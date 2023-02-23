@@ -115,9 +115,8 @@ static struct debounce_ctrl debounce = {
 
 #define SYSTICK_PRIO 15U
 
-static volatile uint32_t ticks;
-
 void SysTick_Handler(void) {
+	uint32_t ticks = getTick();
 	// blink the green led every 512 ms
 	if ((ticks & 511) == 0) {
 		gpio_toggle(IO_LED0);
@@ -130,7 +129,7 @@ void SysTick_Handler(void) {
 	if ((ticks & 7) == 0) {
 		keyscan_isr(&keys);
 	}
-	ticks++;
+	incTick();
 }
 
 // initialise a periodic system tick
@@ -140,32 +139,6 @@ static void systick_init(uint32_t count) {
 	// Configure the SysTick IRQ priority
 	uint32_t group = NVIC_GetPriorityGrouping();
 	NVIC_SetPriority(SysTick_IRQn, NVIC_EncodePriority(group, SYSTICK_PRIO, 0));
-}
-
-uint64_t get_ticks64(void) {
-	static uint32_t ticks_hi, old_ticks;
-	// save/disable systick interrupt
-	uint32_t save = SysTick->CTRL & SysTick_CTRL_TICKINT_Msk;
-	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
-	// detect rollover
-	if (ticks < old_ticks) {
-		ticks_hi++;
-	}
-	old_ticks = ticks;
-	uint64_t n = ((uint64_t) ticks_hi << 32) | (uint64_t) ticks;
-	// restore systick interrupt
-	SysTick->CTRL |= save;
-	return n;
-}
-
-// millisecond delay
-void msDelay(uint32_t delay) {
-	// guarantee delay < actual_delay < delay+1
-	if (delay < UINT32_MAX) {
-		delay++;
-	}
-	uint32_t tickend = ticks + delay;
-	while (ticks < tickend) ;
 }
 
 //-----------------------------------------------------------------------------
