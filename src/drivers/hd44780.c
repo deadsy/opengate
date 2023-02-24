@@ -5,6 +5,21 @@ HD44780 LCD Controller Driver
 
 https://en.wikipedia.org/wiki/Hitachi_HD44780_LCD_controller
 
+Supports:
+
+1 row x 16 col
+1 row x 20 col
+1 row x 24 col
+1 row x 40 col
+
+2 row x 16 col
+2 row x 20 col
+2 row x 24 col
+2 row x 40 col
+
+4 row x 16 col
+4 row x 20 col
+
 */
 //-----------------------------------------------------------------------------
 
@@ -37,9 +52,11 @@ static void hd44780_wr4(struct hd44780_ctrl *ctrl, uint8_t val) {
 
 static void hd44780_wr(struct hd44780_ctrl *ctrl, uint8_t val) {
 	if (ctrl->mode == HD44780_MODE4) {
-		hd44780_wr4(ctrl, val >> 4);	// hi nybble
-		hd44780_wr4(ctrl, val);	// lo nybble
+		// write 2 x 4 bits
+		hd44780_wr4(ctrl, val >> 4);
+		hd44780_wr4(ctrl, val);
 	} else {
+		// write 1 x 8 bits
 		ctrl->clk_hi();
 		ctrl->wr(val);
 		usDelay(5);
@@ -56,17 +73,82 @@ static void hd44780_cmd(struct hd44780_ctrl *ctrl, uint8_t cmd) {
 }
 
 // write 8 bits to the data register
-static void hd44780_char(struct hd44780_ctrl *ctrl, uint8_t ch) {
+static void hd44780_data(struct hd44780_ctrl *ctrl, uint8_t ch) {
 	ctrl->rs_hi();
 	usDelay(5);
 	hd44780_wr(ctrl, ch);
 }
 
 //-----------------------------------------------------------------------------
-// stdio compatible putc
 
-void hd44780_foo(struct hd44780_ctrl *ctrl) {
-	hd44780_char(ctrl, 0);
+// set the row/col cursor position
+int hd44780_cursor(struct hd44780_ctrl *ctrl, uint8_t row, uint8_t col) {
+	if (ctrl == NULL || row >= ctrl->rows || col >= ctrl->cols) {
+		return -1;
+	}
+	switch (row) {
+	case 0:
+		if (ctrl->rows == 1) {
+			if (col < (ctrl->cols >> 1)) {
+				hd44780_cmd(ctrl, 0x80 + col);
+			} else {
+				hd44780_cmd(ctrl, 0xc0 + col - (ctrl->cols >> 1));
+			}
+		} else {
+			hd44780_cmd(ctrl, 0x80 + col);
+		}
+		break;
+	case 1:
+		hd44780_cmd(ctrl, 0xc0 + col);
+		break;
+	case 2:
+		hd44780_cmd(ctrl, 0x80 + ctrl->cols + col);
+		break;
+	case 3:
+		hd44780_cmd(ctrl, 0xc0 + ctrl->cols + col);
+		break;
+	}
+	return 0;
+}
+
+// clear the display
+void hd44780_clr(struct hd44780_ctrl *ctrl) {
+	hd44780_cmd(ctrl, LCD_DISPLAY_CLEAR);
+	msDelay(2);
+}
+
+// clear a display row
+void hd44780_clr_row(struct hd44780_ctrl *ctrl, uint8_t row) {
+	// start of the row
+	if (hd44780_cursor(ctrl, row, 0) < 0) {
+		return;
+	}
+	// write out space characters
+	for (uint8_t i = 0; i < ctrl->cols; i++) {
+		hd44780_data(ctrl, ' ');
+	}
+	// back to the start of the row
+	hd44780_cursor(ctrl, row, 0);
+}
+
+// display a character
+void hd44780_putc(struct hd44780_ctrl *ctrl, uint8_t row, uint8_t col, char c) {
+	if (hd44780_cursor(ctrl, row, col) < 0) {
+		return;
+	}
+	hd44780_data(ctrl, c);
+}
+
+// display a string
+void hd44780_puts(struct hd44780_ctrl *ctrl, uint8_t row, uint8_t col, char *s) {
+	if (hd44780_cursor(ctrl, row, col) < 0 || s == NULL) {
+		return;
+	}
+	uint8_t i = col;
+	while ((i < ctrl->cols) && (*s != 0)) {
+		hd44780_data(ctrl, *s++);
+		i++;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -106,25 +188,12 @@ int hd44780_init(struct hd44780_ctrl *ctrl) {
 	if (ctrl == NULL) {
 		return -1;
 	}
-	if (ctrl->clk_hi == NULL || ctrl->clk_lo == NULL) {
-		return -2;
-	}
-	if (ctrl->rs_hi == NULL || ctrl->rs_lo == NULL) {
-		return -3;
-	}
-	if (ctrl->wr == NULL) {
-		return -4;
-	}
 	// initialise the display
 	if (ctrl->mode == HD44780_MODE4) {
 		hd44780_4bit_init(ctrl);
-	} else if (ctrl->mode == HD44780_MODE8) {
-		hd44780_8bit_init(ctrl);
 	} else {
-		return -5;
+		hd44780_8bit_init(ctrl);
 	}
-	// clear the shadow area
-	memset(ctrl->shadow, 0, ctrl->rows * ctrl->cols);
 	return 0;
 }
 

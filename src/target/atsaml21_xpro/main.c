@@ -159,13 +159,10 @@ static void lcd_wr(uint8_t val) {
 	gpio_rmw(LCD_DATA_PORT, val << LCD_DATA_SHIFT, 15 << LCD_DATA_SHIFT);
 }
 
-static uint8_t lcd_shadow[LCD_ROWS * LCD_COLS];
-
 static struct hd44780_ctrl lcd = {
 	.mode = HD44780_MODE4,
 	.rows = LCD_ROWS,
 	.cols = LCD_COLS,
-	.shadow = lcd_shadow,
 	.clk_hi = lcd_clk_hi,
 	.clk_lo = lcd_clk_lo,
 	.rs_hi = lcd_rs_hi,
