@@ -15,8 +15,9 @@ HD44780 LCD Controller Driver
 
 //-----------------------------------------------------------------------------
 
-#define LCD_MODE4 4		// 4-bit interface
-#define LCD_MODE8 8		// 8-bit interface
+// mode identifier and n-bit mask value
+#define LCD_MODE4 15		// 4-bit interface
+#define LCD_MODE8 255		// 8-bit interface
 
 //-----------------------------------------------------------------------------
 

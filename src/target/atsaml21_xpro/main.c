@@ -3,6 +3,54 @@
 
 SAML21 Xplained Pro Board (SAML21J18A)
 
+Connectors:
+
+PB00
+PB01
+...
+PB04
+PB05
+PB06
+PB07
+PB08
+PB09
+PB10 led0
+PB11
+PB12
+PB13
+PB14
+PB15
+PB16
+PB17
+...
+PB22
+PB23
+...
+PB30
+
+PA02 push button
+PA03
+PA04
+PA05
+PA06
+PA07
+PA08 i2c pullup
+PA09 i2c pullup
+PA10
+PA11
+PA12
+PA13
+...
+PA15
+PA16
+PA17
+PA18
+PA19
+PA20
+PA21
+...
+PA27
+
 */
 //-----------------------------------------------------------------------------
 
@@ -20,14 +68,14 @@ SAML21 Xplained Pro Board (SAML21J18A)
 #define IO_LED0 GPIO_NUM(PORTB, 10)
 #define IO_SW0  GPIO_NUM(PORTA, 2)
 
-#define IO_LCD_CLK  GPIO_NUM(PORTB, 8)
-#define IO_LCD_RS  GPIO_NUM(PORTB, 9)
-#define IO_LCD_D0  GPIO_NUM(PORTA, 4)
+#define IO_LCD_D0  GPIO_NUM(PORTB, 8)
+#define IO_LCD_CLK  GPIO_NUM(PORTB, 16)
+#define IO_LCD_RS  GPIO_NUM(PORTB, 17)
 
 // num, dir, out, mux, cfg
 static const struct gpio_info gpios[] = {
 	// led
-	{IO_LED0, GPIO_OUT, 0, 0, 0},
+	//{IO_LED0, GPIO_OUT, 0, 0, 0},
 	// push button
 	{IO_SW0, GPIO_IN, 1, 0, GPIO_PULLEN | GPIO_INEN},	// pull-up
 	// lcd control
@@ -38,6 +86,10 @@ static const struct gpio_info gpios[] = {
 	{IO_LCD_D0 + 1, GPIO_OUT, 0, 0, 0},
 	{IO_LCD_D0 + 2, GPIO_OUT, 0, 0, 0},
 	{IO_LCD_D0 + 3, GPIO_OUT, 0, 0, 0},
+	{IO_LCD_D0 + 4, GPIO_OUT, 0, 0, 0},
+	{IO_LCD_D0 + 5, GPIO_OUT, 0, 0, 0},
+	{IO_LCD_D0 + 6, GPIO_OUT, 0, 0, 0},
+	{IO_LCD_D0 + 7, GPIO_OUT, 0, 0, 0},
 };
 
 #define NUM_GPIOS (sizeof(gpios) / sizeof(struct gpio_info))
@@ -137,14 +189,15 @@ static void lcd_rs_lo(void) {
 
 #define LCD_DATA_PORT GPIO_PORT(IO_LCD_D0)
 #define LCD_DATA_SHIFT GPIO_PIN(IO_LCD_D0)
+#define LCD_MODE LCD_MODE8
 
 static void lcd_wr(uint8_t val) {
-	gpio_clr(LCD_DATA_PORT, 15 << LCD_DATA_SHIFT);
+	gpio_clr(LCD_DATA_PORT, LCD_MODE << LCD_DATA_SHIFT);
 	gpio_set(LCD_DATA_PORT, val << LCD_DATA_SHIFT);
 }
 
 static struct lcd_ctrl lcd = {
-	.mode = LCD_MODE4,
+	.mode = LCD_MODE,
 	.rows = LCD_ROWS,
 	.cols = LCD_COLS,
 	.clk_hi = lcd_clk_hi,

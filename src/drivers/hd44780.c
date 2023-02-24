@@ -24,15 +24,11 @@ Supports:
 
 //-----------------------------------------------------------------------------
 
-#define LCD_FUNCTION_SET    (0x20 | (0 << 4 /*DL*/) | (1 << 3 /*N*/) | (0 << 2 /*F*/))
-#define LCD_DISPLAY_ON      (0x08 | (1 << 2 /*D*/) | (0 << 1 /*C*/) | (0 << 0 /*B*/))
-#define LCD_DISPLAY_CLEAR   (0x01)
-#define LCD_ENTRY_MODE_SET  (0x04 | (1 << 1 /*I/D*/) | (0 << 0 /*S*/))
-
-//#define LCD_DDRAM_ADR(x)    (0x80 | x)
-//#define LCD_HOME            (0x02)
-//#define LCD_ROW0            LCD_DDRAM_ADR(0)
-//#define LCD_ROW1            LCD_DDRAM_ADR(0x40)
+#define LCD_FUNCTION_SET(dl, n) (0x20 | ((dl) << 4) | ((n) << 3) | (0 << 2 /*F*/))
+#define LCD_DISPLAY_ON          (0x08 | (1 << 2 /*D*/) | (0 << 1 /*C*/) | (0 << 0 /*B*/))
+#define LCD_DISPLAY_OFF         (0x08 | (0 << 2 /*D*/) | (0 << 1 /*C*/) | (0 << 0 /*B*/))
+#define LCD_DISPLAY_CLEAR       (0x01)
+#define LCD_ENTRY_MODE_SET      (0x04 | (1 << 1 /*I/D*/) | (0 << 0 /*S*/))
 
 //-----------------------------------------------------------------------------
 
@@ -163,33 +159,33 @@ void lcd_test(struct lcd_ctrl *ctrl) {
 
 // 4-bit mode initialisation
 static void lcd_4bit_init(struct lcd_ctrl *ctrl) {
-	msDelay(20);
+	msDelay(16);
 	lcd_wr4(ctrl, 3);
-	msDelay(10);
+	msDelay(5);
 	lcd_wr4(ctrl, 3);
 	msDelay(1);
 	lcd_wr4(ctrl, 3);
 	lcd_wr4(ctrl, 2);
 
-	lcd_cmd(ctrl, LCD_FUNCTION_SET);
+	lcd_cmd(ctrl, (ctrl->rows == 1) ? LCD_FUNCTION_SET(0, 0) : LCD_FUNCTION_SET(0, 1));
 	lcd_cmd(ctrl, LCD_DISPLAY_ON);
-	lcd_cmd(ctrl, LCD_DISPLAY_CLEAR);
-	msDelay(2);
-
+	lcd_clr(ctrl);
 	lcd_cmd(ctrl, LCD_ENTRY_MODE_SET);
 }
 
 // 8-bit mode initialisation
 static void lcd_8bit_init(struct lcd_ctrl *ctrl) {
-
-	msDelay(20);
+	msDelay(16);
 	lcd_wr(ctrl, 0x30);
-	msDelay(10);
+	msDelay(5);
 	lcd_wr(ctrl, 0x30);
 	msDelay(1);
 	lcd_wr(ctrl, 0x30);
 
-	// TODO
+	lcd_cmd(ctrl, (ctrl->rows == 1) ? LCD_FUNCTION_SET(1, 0) : LCD_FUNCTION_SET(1, 1));
+	lcd_cmd(ctrl, LCD_DISPLAY_ON);
+	lcd_clr(ctrl);
+	lcd_cmd(ctrl, LCD_ENTRY_MODE_SET);
 }
 
 int lcd_init(struct lcd_ctrl *ctrl) {
