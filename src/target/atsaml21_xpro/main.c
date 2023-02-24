@@ -57,6 +57,7 @@ PA27
 #include "soc.h"
 #include "debounce.h"
 #include "keyscan.h"
+#include "util.h"
 #include "hd44780.h"
 
 #define DEBUG
@@ -246,7 +247,7 @@ void SysTick_Handler(void) {
 	uint32_t ticks = getTick();
 	// blink the green led every 512 ms
 	if ((ticks & 511) == 0) {
-		gpio_toggle_pin(IO_LED0);
+		//gpio_toggle_pin(IO_LED0);
 	}
 	// sample debounced inputs every 16 ms
 	if ((ticks & 15) == 0) {
@@ -294,12 +295,13 @@ int main(void) {
 		DBG("hd44780_init failed %d\r\n", rc);
 		goto exit;
 	}
-	lcd_test(&lcd);
 
 	unsigned int i = 0;
 	while (1) {
+		char tmp[32];
 		//DBG("loop %d\r\n", i);
-		msDelay(1000);
+		lcd_puts(&lcd, 0, 0, itoa(tmp, i));
+		msDelay(250);
 		i++;
 	}
 
