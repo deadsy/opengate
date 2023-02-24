@@ -38,7 +38,7 @@ int gpio_init(const struct gpio_info *info, size_t n) {
 	for (unsigned int i = 0; i < n; i++) {
 		const struct gpio_info *x = &info[i];
 		(x->dir) ? gpio_dirn_out(x->num) : gpio_dirn_in(x->num);
-		(x->out) ? gpio_set(x->num) : gpio_clr(x->num);
+		(x->out) ? gpio_set_pin(x->num) : gpio_clr_pin(x->num);
 		gpio_set_mux(x->num, x->mux);
 		gpio_set_cfg(x->num, x->cfg);
 	}

@@ -20,12 +20,9 @@ SAML21 Xplained Pro Board (SAML21J18A)
 #define IO_LED0 GPIO_NUM(PORTB, 10)
 #define IO_SW0  GPIO_NUM(PORTA, 2)
 
-#define IO_KEY_ROW0  GPIO_NUM(PORTA, 4)
-#define IO_KEY_COL0  GPIO_NUM(PORTA, 10)
-
-#define IO_LCD_CLK  GPIO_NUM(PORTA, 14)
-#define IO_LCD_RS  GPIO_NUM(PORTA, 15)
-#define IO_LCD_D0  GPIO_NUM(PORTB, 0)
+#define IO_LCD_CLK  GPIO_NUM(PORTB, 8)
+#define IO_LCD_RS  GPIO_NUM(PORTB, 9)
+#define IO_LCD_D0  GPIO_NUM(PORTA, 4)
 
 // num, dir, out, mux, cfg
 static const struct gpio_info gpios[] = {
@@ -33,17 +30,6 @@ static const struct gpio_info gpios[] = {
 	{IO_LED0, GPIO_OUT, 0, 0, 0},
 	// push button
 	{IO_SW0, GPIO_IN, 1, 0, GPIO_PULLEN | GPIO_INEN},	// pull-up
-	// keyscan rows (output)
-	{IO_KEY_ROW0 + 0, GPIO_OUT, 0, 0, 0},
-	{IO_KEY_ROW0 + 1, GPIO_OUT, 0, 0, 0},
-	{IO_KEY_ROW0 + 2, GPIO_OUT, 0, 0, 0},
-	{IO_KEY_ROW0 + 3, GPIO_OUT, 0, 0, 0},
-	// keyscan cols (input)
-	{IO_KEY_COL0 + 0, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
-	{IO_KEY_COL0 + 1, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
-	{IO_KEY_COL0 + 2, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
-	{IO_KEY_COL0 + 3, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
-
 	// lcd control
 	{IO_LCD_CLK, GPIO_OUT, 0, 0, 0},
 	{IO_LCD_RS, GPIO_OUT, 0, 0, 0},
@@ -58,6 +44,22 @@ static const struct gpio_info gpios[] = {
 
 //-----------------------------------------------------------------------------
 // keyboard matrix scanning
+
+#if 0
+
+//#define IO_KEY_ROW0  GPIO_NUM(PORTA, 4)
+//#define IO_KEY_COL0  GPIO_NUM(PORTA, 10)
+
+	// keyscan rows (output)
+	//{IO_KEY_ROW0 + 0, GPIO_OUT, 0, 0, 0},
+	//{IO_KEY_ROW0 + 1, GPIO_OUT, 0, 0, 0},
+	//{IO_KEY_ROW0 + 2, GPIO_OUT, 0, 0, 0},
+	//{IO_KEY_ROW0 + 3, GPIO_OUT, 0, 0, 0},
+	// keyscan cols (input)
+	//{IO_KEY_COL0 + 0, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
+	//{IO_KEY_COL0 + 1, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
+	//{IO_KEY_COL0 + 2, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
+	//{IO_KEY_COL0 + 3, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
 
 #define KEY_ROWS 4
 #define KEY_COLS 4
@@ -83,7 +85,6 @@ static void clr_row(int row) {
 #define KEY_COL_MASK ((1 << KEY_COLS) - 1)
 
 static uint32_t read_col(void) {
-	// cols on PA 10,11, 12, 13
 	return (gpio_rd_input(KEY_COL_PORT) >> KEY_COL_SHIFT) & KEY_COL_MASK;
 }
 
@@ -98,6 +99,59 @@ static struct keyscan_ctrl keys = {
 	.clr_row = clr_row,
 	.set_row = set_row,
 	.read_col = read_col,
+};
+
+rc = keyscan_init(&keys);
+if (rc != 0) {
+	DBG("keyscan_init failed %d\r\n", rc);
+	goto exit;
+}
+	// scan the keyboard every 8 ms
+	//if ((ticks & 7) == 0) {
+	//      keyscan_isr(&keys);
+	//}
+
+#endif
+
+//-----------------------------------------------------------------------------
+// LCD
+
+#define LCD_ROWS 2
+#define LCD_COLS 16
+
+static void lcd_clk_hi(void) {
+	gpio_set_pin(IO_LCD_CLK);
+}
+
+static void lcd_clk_lo(void) {
+	gpio_clr_pin(IO_LCD_CLK);
+}
+
+static void lcd_rs_hi(void) {
+	gpio_set_pin(IO_LCD_RS);
+}
+
+static void lcd_rs_lo(void) {
+	gpio_clr_pin(IO_LCD_RS);
+}
+
+#define LCD_DATA_PORT GPIO_PORT(IO_LCD_D0)
+#define LCD_DATA_SHIFT GPIO_PIN(IO_LCD_D0)
+
+static void lcd_wr(uint8_t val) {
+	gpio_clr(LCD_DATA_PORT, 15 << LCD_DATA_SHIFT);
+	gpio_set(LCD_DATA_PORT, val << LCD_DATA_SHIFT);
+}
+
+static struct lcd_ctrl lcd = {
+	.mode = LCD_MODE4,
+	.rows = LCD_ROWS,
+	.cols = LCD_COLS,
+	.clk_hi = lcd_clk_hi,
+	.clk_lo = lcd_clk_lo,
+	.rs_hi = lcd_rs_hi,
+	.rs_lo = lcd_rs_lo,
+	.wr = lcd_wr,
 };
 
 //-----------------------------------------------------------------------------
@@ -131,46 +185,6 @@ static struct debounce_ctrl debounce = {
 };
 
 //-----------------------------------------------------------------------------
-// LCD
-
-#define LCD_ROWS 1
-#define LCD_COLS 20
-
-static void lcd_clk_hi(void) {
-	gpio_set(IO_LCD_CLK);
-}
-
-static void lcd_clk_lo(void) {
-	gpio_clr(IO_LCD_CLK);
-}
-
-static void lcd_rs_hi(void) {
-	gpio_set(IO_LCD_RS);
-}
-
-static void lcd_rs_lo(void) {
-	gpio_clr(IO_LCD_RS);
-}
-
-#define LCD_DATA_PORT GPIO_PORT(IO_LCD_D0)
-#define LCD_DATA_SHIFT GPIO_PIN(IO_LCD_D0)
-
-static void lcd_wr(uint8_t val) {
-	gpio_rmw(LCD_DATA_PORT, val << LCD_DATA_SHIFT, 15 << LCD_DATA_SHIFT);
-}
-
-static struct hd44780_ctrl lcd = {
-	.mode = HD44780_MODE4,
-	.rows = LCD_ROWS,
-	.cols = LCD_COLS,
-	.clk_hi = lcd_clk_hi,
-	.clk_lo = lcd_clk_lo,
-	.rs_hi = lcd_rs_hi,
-	.rs_lo = lcd_rs_lo,
-	.wr = lcd_wr,
-};
-
-//-----------------------------------------------------------------------------
 // 1 millisecond global tick counter
 
 #define SYSTICK_PRIO 15U
@@ -179,15 +193,11 @@ void SysTick_Handler(void) {
 	uint32_t ticks = getTick();
 	// blink the green led every 512 ms
 	if ((ticks & 511) == 0) {
-		gpio_toggle(IO_LED0);
+		gpio_toggle_pin(IO_LED0);
 	}
 	// sample debounced inputs every 16 ms
 	if ((ticks & 15) == 0) {
 		debounce_isr(&debounce);
-	}
-	// scan the keyboard every 8 ms
-	if ((ticks & 7) == 0) {
-		keyscan_isr(&keys);
 	}
 	incTick();
 }
@@ -226,17 +236,12 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = keyscan_init(&keys);
-	if (rc != 0) {
-		DBG("keyscan_init failed %d\r\n", rc);
-		goto exit;
-	}
-
-	rc = hd44780_init(&lcd);
+	rc = lcd_init(&lcd);
 	if (rc != 0) {
 		DBG("hd44780_init failed %d\r\n", rc);
 		goto exit;
 	}
+	lcd_test(&lcd);
 
 	unsigned int i = 0;
 	while (1) {

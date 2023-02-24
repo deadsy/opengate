@@ -48,16 +48,28 @@ struct gpio_info {
 //-----------------------------------------------------------------------------
 // generic api functions
 
-static inline void gpio_clr(int n) {
-	PORT_REGS->GROUP[GPIO_PORT(n)].PORT_OUTCLR = 1 << GPIO_PIN(n);
+static inline void gpio_clr(int port, uint32_t bits) {
+	PORT_REGS->GROUP[port].PORT_OUTCLR = bits;
 }
 
-static inline void gpio_set(int n) {
-	PORT_REGS->GROUP[GPIO_PORT(n)].PORT_OUTSET = 1 << GPIO_PIN(n);
+static inline void gpio_set(int port, uint32_t bits) {
+	PORT_REGS->GROUP[port].PORT_OUTSET = bits;
 }
 
-static inline void gpio_toggle(int n) {
-	PORT_REGS->GROUP[GPIO_PORT(n)].PORT_OUTTGL = 1 << GPIO_PIN(n);
+static inline void gpio_toggle(int port, uint32_t bits) {
+	PORT_REGS->GROUP[port].PORT_OUTTGL = bits;
+}
+
+static inline void gpio_clr_pin(int n) {
+	gpio_clr(GPIO_PORT(n), 1 << GPIO_PIN(n));
+}
+
+static inline void gpio_set_pin(int n) {
+	gpio_set(GPIO_PORT(n), 1 << GPIO_PIN(n));
+}
+
+static inline void gpio_toggle_pin(int n) {
+	gpio_toggle(GPIO_PORT(n), 1 << GPIO_PIN(n));
 }
 
 static inline void gpio_rmw(int port, uint32_t set, uint32_t clr) {

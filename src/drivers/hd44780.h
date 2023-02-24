@@ -15,12 +15,12 @@ HD44780 LCD Controller Driver
 
 //-----------------------------------------------------------------------------
 
-#define HD44780_MODE4 4		// 4-bit interface
-#define HD44780_MODE8 8		// 8-bit interface
+#define LCD_MODE4 4		// 4-bit interface
+#define LCD_MODE8 8		// 8-bit interface
 
 //-----------------------------------------------------------------------------
 
-struct hd44780_ctrl {
+struct lcd_ctrl {
 	int mode;		// 4 or 8 bit
 	uint8_t rows, cols;	// number of character rows and columns
 	void (*clk_hi)(void);	// clock high
@@ -30,12 +30,13 @@ struct hd44780_ctrl {
 	void (*wr)(uint8_t val);	// write 4 or 8 bits
 };
 
-int hd44780_init(struct hd44780_ctrl *ctrl);
-int hd44780_cursor(struct hd44780_ctrl *ctrl, uint8_t row, uint8_t col);
-void hd44780_clr(struct hd44780_ctrl *ctrl);
-void hd44780_clr_row(struct hd44780_ctrl *ctrl, uint8_t row);
-void hd44780_putc(struct hd44780_ctrl *ctrl, uint8_t row, uint8_t col, char c);
-void hd44780_puts(struct hd44780_ctrl *ctrl, uint8_t row, uint8_t col, char *s);
+int lcd_init(struct lcd_ctrl *ctrl);
+void lcd_test(struct lcd_ctrl *ctrl);
+int lcd_cursor(struct lcd_ctrl *ctrl, uint8_t row, uint8_t col);
+void lcd_clr(struct lcd_ctrl *ctrl);
+void lcd_clr_row(struct lcd_ctrl *ctrl, uint8_t row);
+void lcd_putc(struct lcd_ctrl *ctrl, uint8_t row, uint8_t col, char c);
+void lcd_puts(struct lcd_ctrl *ctrl, uint8_t row, uint8_t col, char *s);
 
 //-----------------------------------------------------------------------------
 
