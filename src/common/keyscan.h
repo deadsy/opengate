@@ -15,10 +15,16 @@ Key Matrix Scanning
 
 //-----------------------------------------------------------------------------
 
+// reasonable values (can be customised)
+#define DEBOUNCE_DOWN 1
+#define DEBOUNCE_UP 3
+
 struct keyscan_ctrl {
 	int ready;		// initialised
 	int rows;		// number of matrix rows
 	int cols;		// number of matrix cols
+	int debounce_dn;	// debounce down count
+	int debounce_up;	// debounce up count
 	int row;		// current row
 	uint8_t *state;		// row x col bytes for key state
 	void (*key_dn)(int key);	// provided key down handler (optional)

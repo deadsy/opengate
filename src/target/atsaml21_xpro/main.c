@@ -3,54 +3,6 @@
 
 SAML21 Xplained Pro Board (SAML21J18A)
 
-Connectors:
-
-PB00
-PB01
-...
-PB04
-PB05
-PB06
-PB07
-PB08
-PB09
-PB10 led0
-PB11
-PB12
-PB13
-PB14
-PB15
-PB16
-PB17
-...
-PB22
-PB23
-...
-PB30
-
-PA02 push button
-PA03
-PA04
-PA05
-PA06
-PA07
-PA08 i2c pullup
-PA09 i2c pullup
-PA10
-PA11
-PA12
-PA13
-...
-PA15
-PA16
-PA17
-PA18
-PA19
-PA20
-PA21
-...
-PA27
-
 */
 //-----------------------------------------------------------------------------
 
@@ -71,28 +23,26 @@ PA27
 #define IO_LED0 GPIO_NUM(PORTB, 10)
 #define IO_SW0  GPIO_NUM(PORTA, 2)
 
-#define IO_LCD_D0  GPIO_NUM(PORTB, 8)
-#define IO_LCD_CLK  GPIO_NUM(PORTB, 16)
-#define IO_LCD_RS  GPIO_NUM(PORTB, 17)
+#define IO_KEY_ROW0  GPIO_NUM(PORTA, 4)
+#define IO_KEY_COL0  GPIO_NUM(PORTA, 10)
 
 // num, dir, out, mux, cfg
 static const struct gpio_info gpios[] = {
 	// led
-	//{IO_LED0, GPIO_OUT, 0, 0, 0},
+	{IO_LED0, GPIO_OUT, 0, 0, 0},
 	// push button
 	{IO_SW0, GPIO_IN, 1, 0, GPIO_PULLEN | GPIO_INEN},	// pull-up
-	// lcd control
-	{IO_LCD_CLK, GPIO_OUT, 0, 0, 0},
-	{IO_LCD_RS, GPIO_OUT, 0, 0, 0},
-	// lcd data
-	{IO_LCD_D0 + 0, GPIO_OUT, 0, 0, 0},
-	{IO_LCD_D0 + 1, GPIO_OUT, 0, 0, 0},
-	{IO_LCD_D0 + 2, GPIO_OUT, 0, 0, 0},
-	{IO_LCD_D0 + 3, GPIO_OUT, 0, 0, 0},
-	{IO_LCD_D0 + 4, GPIO_OUT, 0, 0, 0},
-	{IO_LCD_D0 + 5, GPIO_OUT, 0, 0, 0},
-	{IO_LCD_D0 + 6, GPIO_OUT, 0, 0, 0},
-	{IO_LCD_D0 + 7, GPIO_OUT, 0, 0, 0},
+
+	// keyscan rows (output)
+	{IO_KEY_ROW0 + 0, GPIO_OUT, 0, 0, GPIO_DRVSTR},
+	{IO_KEY_ROW0 + 1, GPIO_OUT, 0, 0, GPIO_DRVSTR},
+	{IO_KEY_ROW0 + 2, GPIO_OUT, 0, 0, GPIO_DRVSTR},
+	{IO_KEY_ROW0 + 3, GPIO_OUT, 0, 0, GPIO_DRVSTR},
+	// keyscan cols (input)
+	{IO_KEY_COL0 + 0, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+	{IO_KEY_COL0 + 1, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+	{IO_KEY_COL0 + 2, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
+
 };
 
 #define NUM_GPIOS (sizeof(gpios) / sizeof(struct gpio_info))
@@ -100,24 +50,8 @@ static const struct gpio_info gpios[] = {
 //-----------------------------------------------------------------------------
 // keyboard matrix scanning
 
-#if 0
-
-//#define IO_KEY_ROW0  GPIO_NUM(PORTA, 4)
-//#define IO_KEY_COL0  GPIO_NUM(PORTA, 10)
-
-	// keyscan rows (output)
-	//{IO_KEY_ROW0 + 0, GPIO_OUT, 0, 0, 0},
-	//{IO_KEY_ROW0 + 1, GPIO_OUT, 0, 0, 0},
-	//{IO_KEY_ROW0 + 2, GPIO_OUT, 0, 0, 0},
-	//{IO_KEY_ROW0 + 3, GPIO_OUT, 0, 0, 0},
-	// keyscan cols (input)
-	//{IO_KEY_COL0 + 0, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
-	//{IO_KEY_COL0 + 1, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
-	//{IO_KEY_COL0 + 2, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
-	//{IO_KEY_COL0 + 3, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
-
 #define KEY_ROWS 4
-#define KEY_COLS 4
+#define KEY_COLS 3
 
 static void key_down(int key) {
 	DBG("key down %d\r\n", key);
@@ -128,11 +62,11 @@ static void key_up(int key) {
 }
 
 static void set_row(int row) {
-	gpio_set(IO_KEY_ROW0 + row);
+	gpio_set_pin(IO_KEY_ROW0 + row);
 }
 
 static void clr_row(int row) {
-	gpio_clr(IO_KEY_ROW0 + row);
+	gpio_clr_pin(IO_KEY_ROW0 + row);
 }
 
 #define KEY_COL_PORT GPIO_PORT(IO_KEY_COL0)
@@ -148,6 +82,8 @@ static uint8_t key_state[KEY_ROWS * KEY_COLS];
 static struct keyscan_ctrl keys = {
 	.rows = KEY_ROWS,
 	.cols = KEY_COLS,
+	.debounce_dn = 0,
+	.debounce_up = 2,
 	.state = key_state,
 	.key_dn = key_down,
 	.key_up = key_up,
@@ -156,20 +92,27 @@ static struct keyscan_ctrl keys = {
 	.read_col = read_col,
 };
 
-rc = keyscan_init(&keys);
-if (rc != 0) {
-	DBG("keyscan_init failed %d\r\n", rc);
-	goto exit;
-}
-	// scan the keyboard every 8 ms
-	//if ((ticks & 7) == 0) {
-	//      keyscan_isr(&keys);
-	//}
-
-#endif
-
 //-----------------------------------------------------------------------------
 // LCD
+
+#if 0
+
+//#define IO_LCD_D0  GPIO_NUM(PORTB, 8)
+//#define IO_LCD_CLK  GPIO_NUM(PORTB, 16)
+//#define IO_LCD_RS  GPIO_NUM(PORTB, 17)
+
+	// lcd control
+//{IO_LCD_CLK, GPIO_OUT, 0, 0, 0},
+//{IO_LCD_RS, GPIO_OUT, 0, 0, 0},
+    // lcd data
+//{IO_LCD_D0 + 0, GPIO_OUT, 0, 0, 0},
+//{IO_LCD_D0 + 1, GPIO_OUT, 0, 0, 0},
+//{IO_LCD_D0 + 2, GPIO_OUT, 0, 0, 0},
+//{IO_LCD_D0 + 3, GPIO_OUT, 0, 0, 0},
+//{IO_LCD_D0 + 4, GPIO_OUT, 0, 0, 0},
+//{IO_LCD_D0 + 5, GPIO_OUT, 0, 0, 0},
+//{IO_LCD_D0 + 6, GPIO_OUT, 0, 0, 0},
+//{IO_LCD_D0 + 7, GPIO_OUT, 0, 0, 0},
 
 #define LCD_ROWS 1
 #define LCD_COLS 20
@@ -210,6 +153,8 @@ static struct lcd_ctrl lcd = {
 	.wr = lcd_wr,
 };
 
+#endif
+
 //-----------------------------------------------------------------------------
 // switch/button debouncing (called from the system tick isr)
 
@@ -243,6 +188,8 @@ static struct debounce_ctrl debounce = {
 //-----------------------------------------------------------------------------
 // scroller
 
+#if 0
+
 static void scroll_puts(char *s, int col) {
 	lcd_puts(&lcd, 0, col, s);
 }
@@ -254,6 +201,8 @@ static struct scroll_ctrl scroll = {
 	.puts = scroll_puts,
 };
 
+#endif
+
 //-----------------------------------------------------------------------------
 // 1 millisecond global tick counter
 
@@ -263,11 +212,15 @@ void SysTick_Handler(void) {
 	uint32_t ticks = getTick();
 	// blink the green led every 512 ms
 	if ((ticks & 511) == 0) {
-		//gpio_toggle_pin(IO_LED0);
+		gpio_toggle_pin(IO_LED0);
 	}
 	// sample debounced inputs every 16 ms
 	if ((ticks & 15) == 0) {
 		debounce_isr(&debounce);
+	}
+	// scan the keyboard every 8 ms
+	if ((ticks & 7) == 0) {
+		keyscan_isr(&keys);
 	}
 	incTick();
 }
@@ -306,6 +259,12 @@ int main(void) {
 		goto exit;
 	}
 
+	rc = keyscan_init(&keys);
+	if (rc != 0) {
+		DBG("keyscan_init failed %d\r\n", rc);
+		goto exit;
+	}
+#if 0
 	rc = lcd_init(&lcd);
 	if (rc != 0) {
 		DBG("hd44780_init failed %d\r\n", rc);
@@ -317,6 +276,7 @@ int main(void) {
 		DBG("scroll_init failed %d\r\n", rc);
 		goto exit;
 	}
+#endif
 
 	unsigned int i = 0;
 	while (1) {
@@ -324,11 +284,9 @@ int main(void) {
 		//DBG("loop %d\r\n", i);
 		//lcd_puts(&lcd, 0, 0, itoa(tmp, i));
 		msDelay(300);
-
-		lcd_off(&lcd);
-		scroll_update(&scroll);
-		lcd_on(&lcd);
-
+		//lcd_off(&lcd);
+		//scroll_update(&scroll);
+		//lcd_on(&lcd);
 		i++;
 	}
 
