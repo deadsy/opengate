@@ -35,6 +35,8 @@ int lcd_init(struct lcd_ctrl *ctrl);
 void lcd_test(struct lcd_ctrl *ctrl);
 int lcd_cursor(struct lcd_ctrl *ctrl, uint8_t row, uint8_t col);
 void lcd_clr(struct lcd_ctrl *ctrl);
+void lcd_on(struct lcd_ctrl *ctrl);
+void lcd_off(struct lcd_ctrl *ctrl);
 void lcd_clr_row(struct lcd_ctrl *ctrl, uint8_t row);
 void lcd_putc(struct lcd_ctrl *ctrl, uint8_t row, uint8_t col, char c);
 void lcd_puts(struct lcd_ctrl *ctrl, uint8_t row, uint8_t col, char *s);

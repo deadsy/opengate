@@ -26,6 +26,7 @@ SRC += $(COMMON_DIR)/logging.c \
 	$(COMMON_DIR)/debounce.c \
 	$(COMMON_DIR)/keyscan.c \
 	$(COMMON_DIR)/util.c \
+	$(COMMON_DIR)/scroll.c \
 	$(COMMON_DIR)/rtt/SEGGER_RTT.c \
 	$(COMMON_DIR)/rtt/SEGGER_RTT_printf.c \
 

@@ -78,15 +78,7 @@ int lcd_cursor(struct lcd_ctrl *ctrl, uint8_t row, uint8_t col) {
 	}
 	switch (row) {
 	case 0:
-		if (ctrl->rows == 1) {
-			if (col < (ctrl->cols >> 1)) {
-				lcd_cmd(ctrl, 0x80 + col);
-			} else {
-				lcd_cmd(ctrl, 0xc0 + col - (ctrl->cols >> 1));
-			}
-		} else {
-			lcd_cmd(ctrl, 0x80 + col);
-		}
+		lcd_cmd(ctrl, 0x80 + col);
 		break;
 	case 1:
 		lcd_cmd(ctrl, 0xc0 + col);
@@ -105,6 +97,16 @@ int lcd_cursor(struct lcd_ctrl *ctrl, uint8_t row, uint8_t col) {
 void lcd_clr(struct lcd_ctrl *ctrl) {
 	lcd_cmd(ctrl, LCD_DISPLAY_CLEAR);
 	msDelay(2);
+}
+
+// turn the display on
+void lcd_on(struct lcd_ctrl *ctrl) {
+	lcd_cmd(ctrl, LCD_DISPLAY_ON);
+}
+
+// turn the display off
+void lcd_off(struct lcd_ctrl *ctrl) {
+	lcd_cmd(ctrl, LCD_DISPLAY_OFF);
 }
 
 // clear a display row
@@ -166,11 +168,7 @@ static void lcd_4bit_init(struct lcd_ctrl *ctrl) {
 	msDelay(1);
 	lcd_wr4(ctrl, 3);
 	lcd_wr4(ctrl, 2);
-
 	lcd_cmd(ctrl, (ctrl->rows == 1) ? LCD_FUNCTION_SET(0, 0) : LCD_FUNCTION_SET(0, 1));
-	lcd_cmd(ctrl, LCD_DISPLAY_ON);
-	lcd_clr(ctrl);
-	lcd_cmd(ctrl, LCD_ENTRY_MODE_SET);
 }
 
 // 8-bit mode initialisation
@@ -181,11 +179,7 @@ static void lcd_8bit_init(struct lcd_ctrl *ctrl) {
 	lcd_wr(ctrl, 0x30);
 	msDelay(1);
 	lcd_wr(ctrl, 0x30);
-
 	lcd_cmd(ctrl, (ctrl->rows == 1) ? LCD_FUNCTION_SET(1, 0) : LCD_FUNCTION_SET(1, 1));
-	lcd_cmd(ctrl, LCD_DISPLAY_ON);
-	lcd_clr(ctrl);
-	lcd_cmd(ctrl, LCD_ENTRY_MODE_SET);
 }
 
 int lcd_init(struct lcd_ctrl *ctrl) {
@@ -195,6 +189,9 @@ int lcd_init(struct lcd_ctrl *ctrl) {
 	} else {
 		lcd_8bit_init(ctrl);
 	}
+	lcd_cmd(ctrl, LCD_DISPLAY_ON);
+	lcd_clr(ctrl);
+	lcd_cmd(ctrl, LCD_ENTRY_MODE_SET);
 	return 0;
 }
 

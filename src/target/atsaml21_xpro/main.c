@@ -58,6 +58,8 @@ PA27
 #include "debounce.h"
 #include "keyscan.h"
 #include "util.h"
+#include "scroll.h"
+
 #include "hd44780.h"
 
 #define DEBUG
@@ -169,8 +171,8 @@ if (rc != 0) {
 //-----------------------------------------------------------------------------
 // LCD
 
-#define LCD_ROWS 2
-#define LCD_COLS 16
+#define LCD_ROWS 1
+#define LCD_COLS 20
 
 static void lcd_clk_hi(void) {
 	gpio_set_pin(IO_LCD_CLK);
@@ -239,6 +241,20 @@ static struct debounce_ctrl debounce = {
 };
 
 //-----------------------------------------------------------------------------
+// scroller
+
+static void scroll_puts(char *s, int col) {
+	lcd_puts(&lcd, 0, col, s);
+}
+
+static struct scroll_ctrl scroll = {
+	.s = "     Arbeit Macht Frei...   Arby's Makes Fries...",
+	.width = LCD_COLS,
+	.dirn = SCROLL_LEFT,
+	.puts = scroll_puts,
+};
+
+//-----------------------------------------------------------------------------
 // 1 millisecond global tick counter
 
 #define SYSTICK_PRIO 15U
@@ -296,12 +312,23 @@ int main(void) {
 		goto exit;
 	}
 
+	rc = scroll_init(&scroll);
+	if (rc != 0) {
+		DBG("scroll_init failed %d\r\n", rc);
+		goto exit;
+	}
+
 	unsigned int i = 0;
 	while (1) {
-		char tmp[32];
+		//char tmp[32];
 		//DBG("loop %d\r\n", i);
-		lcd_puts(&lcd, 0, 0, itoa(tmp, i));
-		msDelay(250);
+		//lcd_puts(&lcd, 0, 0, itoa(tmp, i));
+		msDelay(300);
+
+		lcd_off(&lcd);
+		scroll_update(&scroll);
+		lcd_on(&lcd);
+
 		i++;
 	}
 
