@@ -22,9 +22,12 @@ GPIO Control for the ATSAM Devices
 #define PORTA 0
 #define PORTB 1
 
-#define GPIO_NUM(port, pin) (((port) << 5) | ((pin) & 31))
-#define GPIO_PIN(n) ((n) & 31)
-#define GPIO_PORT(n) (((n) >> 5) & 1)
+#define IO_NUM(port, pin) ((((port) & 1) << 5) | (((pin) & 31) << 0))
+
+#define IO_PIN(n) ((n) & 31)
+#define IO_PORT(n) (((n) >> 5) & 1)
+
+//-----------------------------------------------------------------------------
 
 #define GPIO_IN 0		// input
 #define GPIO_OUT 1		// ouput
@@ -41,7 +44,7 @@ struct gpio_info {
 	int num;		// gpio number
 	uint8_t dir;		// direction
 	uint8_t out;		// output
-	uint8_t mux;		// mux value
+	uint8_t mux;		// mux number
 	uint8_t cfg;		// configuration
 };
 
@@ -61,15 +64,15 @@ static inline void gpio_toggle(int port, uint32_t bits) {
 }
 
 static inline void gpio_clr_pin(int n) {
-	gpio_clr(GPIO_PORT(n), 1 << GPIO_PIN(n));
+	gpio_clr(IO_PORT(n), 1 << IO_PIN(n));
 }
 
 static inline void gpio_set_pin(int n) {
-	gpio_set(GPIO_PORT(n), 1 << GPIO_PIN(n));
+	gpio_set(IO_PORT(n), 1 << IO_PIN(n));
 }
 
 static inline void gpio_toggle_pin(int n) {
-	gpio_toggle(GPIO_PORT(n), 1 << GPIO_PIN(n));
+	gpio_toggle(IO_PORT(n), 1 << IO_PIN(n));
 }
 
 static inline void gpio_rmw(int port, uint32_t set, uint32_t clr) {
@@ -82,11 +85,11 @@ static inline void gpio_rmw(int port, uint32_t set, uint32_t clr) {
 }
 
 static inline int gpio_rd(int n) {
-	return (PORT_REGS->GROUP[GPIO_PORT(n)].PORT_IN >> GPIO_PIN(n)) & 1;
+	return (PORT_REGS->GROUP[IO_PORT(n)].PORT_IN >> IO_PIN(n)) & 1;
 }
 
 static inline int gpio_rd_inv(int n) {
-	return (~(PORT_REGS->GROUP[GPIO_PORT(n)].PORT_IN) >> GPIO_PIN(n)) & 1;
+	return (~(PORT_REGS->GROUP[IO_PORT(n)].PORT_IN) >> IO_PIN(n)) & 1;
 }
 
 static inline uint32_t gpio_rd_input(int port) {
@@ -94,11 +97,11 @@ static inline uint32_t gpio_rd_input(int port) {
 }
 
 static inline void gpio_dirn_in(int n) {
-	PORT_REGS->GROUP[GPIO_PORT(n)].PORT_DIRCLR = 1 << GPIO_PIN(n);
+	PORT_REGS->GROUP[IO_PORT(n)].PORT_DIRCLR = 1 << IO_PIN(n);
 }
 
 static inline void gpio_dirn_out(int n) {
-	PORT_REGS->GROUP[GPIO_PORT(n)].PORT_DIRSET = 1 << GPIO_PIN(n);
+	PORT_REGS->GROUP[IO_PORT(n)].PORT_DIRSET = 1 << IO_PIN(n);
 }
 
 int gpio_init(const struct gpio_info *info, size_t n);

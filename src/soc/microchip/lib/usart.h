@@ -21,9 +21,8 @@ USART Driver for the ATSAM Devices
 struct usart_cfg {
 	uint32_t base;		// base address of usart peripheral
 	int baud;		// baud rate
-	int data;		// data bits
-	int parity;		// parity bits
-	int stop;		// stop bits
+	int txpo;		// tx data pinout
+	int rxpo;		// rx data pinout
 };
 
 struct usart_drv {

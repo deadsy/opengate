@@ -20,35 +20,41 @@ SAML21 Xplained Pro Board (SAML21J18A)
 //-----------------------------------------------------------------------------
 // gpio configuration
 
-#define IO_LED0 GPIO_NUM(PORTB, 10)
-#define IO_SW0  GPIO_NUM(PORTA, 2)
+#define IO_LED0 IO_NUM(PORTB, 10)
+#define IO_SW0  IO_NUM(PORTA, 2)
+#define IO_USART_TX IO_NUM(PORTA, 4)
+#define IO_USART_RX IO_NUM(PORTA, 5)
 
-#define IO_KEY_ROW0  GPIO_NUM(PORTA, 4)
-#define IO_KEY_COL0  GPIO_NUM(PORTA, 10)
-
-// num, dir, out, mux, cfg
+// num, dir, out, cfg
 static const struct gpio_info gpios[] = {
 	// led
 	{IO_LED0, GPIO_OUT, 0, 0, 0},
 	// push button
 	{IO_SW0, GPIO_IN, 1, 0, GPIO_PULLEN | GPIO_INEN},	// pull-up
-
-	// keyscan rows (output)
-	{IO_KEY_ROW0 + 0, GPIO_OUT, 0, 0, GPIO_DRVSTR},
-	{IO_KEY_ROW0 + 1, GPIO_OUT, 0, 0, GPIO_DRVSTR},
-	{IO_KEY_ROW0 + 2, GPIO_OUT, 0, 0, GPIO_DRVSTR},
-	{IO_KEY_ROW0 + 3, GPIO_OUT, 0, 0, GPIO_DRVSTR},
-	// keyscan cols (input)
-	{IO_KEY_COL0 + 0, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
-	{IO_KEY_COL0 + 1, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
-	{IO_KEY_COL0 + 2, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},	// pull-down
-
+	// usart
+	{IO_USART_TX, GPIO_IN, 0, 3, GPIO_PMUXEN},	// sercom0, tx, pad[0]
+	{IO_USART_RX, GPIO_IN, 0, 3, GPIO_PMUXEN},	// sercom0, rx, pad[1]
 };
 
 #define NUM_GPIOS (sizeof(gpios) / sizeof(struct gpio_info))
 
 //-----------------------------------------------------------------------------
 // keyboard matrix scanning
+
+#if 0
+
+#define IO_KEY_ROW0  GPIO_NUM(PORTA, 4)
+#define IO_KEY_COL0  GPIO_NUM(PORTA, 10)
+
+	// keyscan rows (output)
+	//{IO_KEY_ROW0 + 0, GPIO_OUT, 0, 0, GPIO_DRVSTR},
+	//{IO_KEY_ROW0 + 1, GPIO_OUT, 0, 0, GPIO_DRVSTR},
+	//{IO_KEY_ROW0 + 2, GPIO_OUT, 0, 0, GPIO_DRVSTR},
+	//{IO_KEY_ROW0 + 3, GPIO_OUT, 0, 0, GPIO_DRVSTR},
+	// keyscan cols (input)
+	//{IO_KEY_COL0 + 0, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
+	//{IO_KEY_COL0 + 1, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
+	//{IO_KEY_COL0 + 2, GPIO_IN, 0, 0, GPIO_INEN | GPIO_PULLEN},    // pull-down
 
 #define KEY_ROWS 4
 #define KEY_COLS 3
@@ -91,6 +97,8 @@ static struct keyscan_ctrl keys = {
 	.set_row = set_row,
 	.read_col = read_col,
 };
+
+#endif
 
 //-----------------------------------------------------------------------------
 // LCD
@@ -186,6 +194,18 @@ static struct debounce_ctrl debounce = {
 };
 
 //-----------------------------------------------------------------------------
+// usart
+
+static struct usart_cfg usart0_cfg = {
+	.base = SERCOM0_BASE_ADDRESS,
+	.baud = 19200,
+	.txpo = 2,		// use pad[0]
+	.rxpo = 1,		// use pad[1]
+};
+
+static struct usart_drv usart0;
+
+//-----------------------------------------------------------------------------
 // scroller
 
 #if 0
@@ -219,9 +239,9 @@ void SysTick_Handler(void) {
 		debounce_isr(&debounce);
 	}
 	// scan the keyboard every 8 ms
-	if ((ticks & 7) == 0) {
-		keyscan_isr(&keys);
-	}
+	//if ((ticks & 7) == 0) {
+	//      keyscan_isr(&keys);
+	//}
 	incTick();
 }
 
@@ -259,12 +279,17 @@ int main(void) {
 		goto exit;
 	}
 
+	rc = usart_init(&usart0, &usart0_cfg);
+	if (rc != 0) {
+		DBG("usart_init failed %d\r\n", rc);
+		goto exit;
+	}
+#if 0
 	rc = keyscan_init(&keys);
 	if (rc != 0) {
 		DBG("keyscan_init failed %d\r\n", rc);
 		goto exit;
 	}
-#if 0
 	rc = lcd_init(&lcd);
 	if (rc != 0) {
 		DBG("hd44780_init failed %d\r\n", rc);
@@ -281,9 +306,9 @@ int main(void) {
 	unsigned int i = 0;
 	while (1) {
 		//char tmp[32];
-		//DBG("loop %d\r\n", i);
+		DBG("loop %d\r\n", i);
 		//lcd_puts(&lcd, 0, 0, itoa(tmp, i));
-		msDelay(300);
+		msDelay(1000);
 		//lcd_off(&lcd);
 		//scroll_update(&scroll);
 		//lcd_on(&lcd);

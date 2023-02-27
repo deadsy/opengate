@@ -12,10 +12,10 @@ GPIO Control for the ATSAM Devices
 
 // Set mux number for the IO pin
 static void gpio_set_mux(int n, uint8_t mux) {
-	int pin = GPIO_PIN(n);
+	int pin = IO_PIN(n);
 	mux &= 15;
 	// read/modify/write
-	uint8_t val = PORT_REGS->GROUP[GPIO_PORT(n)].PORT_PMUX[pin >> 1];
+	uint8_t val = PORT_REGS->GROUP[IO_PORT(n)].PORT_PMUX[pin >> 1];
 	if (pin & 1) {
 		// odd, upper 4 bits
 		val = (val & 0x0f) | (mux << 4);
@@ -23,12 +23,12 @@ static void gpio_set_mux(int n, uint8_t mux) {
 		// even, lower 4 bits
 		val = (val & 0xf0) | mux;
 	}
-	PORT_REGS->GROUP[GPIO_PORT(n)].PORT_PMUX[pin >> 1] = val;
+	PORT_REGS->GROUP[IO_PORT(n)].PORT_PMUX[pin >> 1] = val;
 }
 
 // Set the IO pin configuration
 static void gpio_set_cfg(int n, uint8_t cfg) {
-	PORT_REGS->GROUP[GPIO_PORT(n)].PORT_PINCFG[GPIO_PIN(n)] = cfg;
+	PORT_REGS->GROUP[IO_PORT(n)].PORT_PINCFG[IO_PIN(n)] = cfg;
 }
 
 //-----------------------------------------------------------------------------
