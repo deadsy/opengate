@@ -11,6 +11,7 @@ SAML21 Xplained Pro Board (SAML21J18A)
 #include "keyscan.h"
 #include "util.h"
 #include "scroll.h"
+#include "event.h"
 
 #include "hd44780.h"
 
@@ -284,6 +285,13 @@ int main(void) {
 		DBG("usart_init failed %d\r\n", rc);
 		goto exit;
 	}
+
+	rc = event_init();
+	if (rc != 0) {
+		DBG("event_init failed %d\r\n", rc);
+		goto exit;
+	}
+
 #if 0
 	rc = keyscan_init(&keys);
 	if (rc != 0) {
