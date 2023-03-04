@@ -19,6 +19,7 @@ Event Processing
 #define EVENT_TYPE(x) ((x) & 0xff000000U)
 #define EVENT_TYPE_KEY_DN (1U << 24)
 #define EVENT_TYPE_KEY_UP (2U << 24)
+#define EVENT_TYPE_TIMER (3U << 24)
 
 // key number in the lower 8 bits
 #define EVENT_KEY(x) ((x) & 0xffU)

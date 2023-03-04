@@ -10,6 +10,7 @@ src_dirs = (
   'target/maduino_zero',
   'soc/microchip/lib',
   'common',
+  'og',
   'drivers',
 )
 

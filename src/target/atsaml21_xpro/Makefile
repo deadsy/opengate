@@ -26,14 +26,19 @@ SRC += $(COMMON_DIR)/logging.c \
 	$(COMMON_DIR)/debounce.c \
 	$(COMMON_DIR)/keyscan.c \
 	$(COMMON_DIR)/util.c \
-	$(COMMON_DIR)/scroll.c \
-	$(COMMON_DIR)/event.c \
 	$(COMMON_DIR)/rtt/SEGGER_RTT.c \
 	$(COMMON_DIR)/rtt/SEGGER_RTT_printf.c \
 
 # driver sources
 DRIVER_DIR = $(TOP)/drivers
 SRC += $(DRIVER_DIR)/hd44780.c \
+
+# application sources
+OPENGATE_DIR = $(TOP)/og
+SRC += $(OPENGATE_DIR)/scroll.c \
+	$(OPENGATE_DIR)/event.c \
+	$(OPENGATE_DIR)/timer.c \
+	$(OPENGATE_DIR)/og.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 
@@ -45,6 +50,7 @@ INCLUDE += -I$(SOC_DIR)/lib
 INCLUDE += -I$(COMMON_DIR)
 INCLUDE += -I$(COMMON_DIR)/rtt
 INCLUDE += -I$(DRIVER_DIR)
+INCLUDE += -I$(OPENGATE_DIR)
 
 # linker flags
 LDSCRIPT = $(CHIP_DIR)/gcc/gcc/$(CHIP)_flash.ld 
