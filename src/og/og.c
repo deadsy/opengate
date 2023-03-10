@@ -48,16 +48,8 @@ static void key_up_handler(struct opengate *og, struct event *e) {
 
 //-----------------------------------------------------------------------------
 
-static void foo(void *arg) {
-	(void)arg;
-	DBG("foo!\r\n");
-}
-
 // main opengate loop
 int og_run(struct opengate *og) {
-
-	timer_alloc(TIMER_REPEAT, 1024, foo, NULL);
-
 	while (1) {
 		struct event e;
 		if (!event_rd(&e)) {
@@ -82,6 +74,15 @@ int og_run(struct opengate *og) {
 
 //-----------------------------------------------------------------------------
 
+static void foo(void *arg) {
+	static int i = 0;
+	(void)arg;
+	DBG("foo! %d\r\n", i);
+	i++;
+}
+
+//-----------------------------------------------------------------------------
+
 // initialise the opengate state
 int og_init(struct opengate *og) {
 	int rc = 0;
@@ -99,6 +100,8 @@ int og_init(struct opengate *og) {
 		DBG("event_init failed %d\r\n", rc);
 		goto exit;
 	}
+
+	timer_alloc(TIMER_REPEAT, 1024, foo, NULL);
 
  exit:
 	return rc;

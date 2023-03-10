@@ -1,25 +1,24 @@
 //-----------------------------------------------------------------------------
 /*
 
-ATSAM SoC top-level include file
+Clock Initialisation
 
 */
 //-----------------------------------------------------------------------------
 
+#ifndef CLOCK_H
+#define CLOCK_H
+
 #ifndef SOC_H
-#define SOC_H
+#warning "please include this file using the toplevel soc.h"
+#endif
 
 //-----------------------------------------------------------------------------
 
-#include "sam.h"
-#include "irq.h"
-#include "delay.h"
-#include "gpio.h"
-#include "usart.h"
-#include "clock.h"
+void clock_init(void);
 
 //-----------------------------------------------------------------------------
 
-#endif				// SOC_H
+#endif				// CLOCK_H
 
 //-----------------------------------------------------------------------------

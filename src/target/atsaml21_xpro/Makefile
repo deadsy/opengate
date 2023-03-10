@@ -19,6 +19,7 @@ SOC_DIR = $(TOP)/soc/microchip
 SRC += $(SOC_DIR)/lib/gpio.c \
 	$(SOC_DIR)/lib/usart.c \
 	$(SOC_DIR)/lib/delay.c \
+	$(SOC_DIR)/lib/clock.c \
 
 # common sources
 COMMON_DIR = $(TOP)/common

@@ -25,7 +25,7 @@ SAML21 Xplained Pro Board (SAML21J18A)
 #define IO_USART_TX IO_NUM(PORTA, 4)
 #define IO_USART_RX IO_NUM(PORTA, 5)
 
-// num, dir, out, cfg
+// num, dir, out, mux, cfg
 static const struct gpio_info gpios[] = {
 	// led
 	{IO_LED0, GPIO_OUT, 0, 0, 0},
@@ -34,6 +34,8 @@ static const struct gpio_info gpios[] = {
 	// usart
 	{IO_USART_TX, GPIO_IN, 0, 3, GPIO_PMUXEN},	// sercom0, tx, pad[0]
 	{IO_USART_RX, GPIO_IN, 0, 3, GPIO_PMUXEN},	// sercom0, rx, pad[1]
+
+	{IO_NUM(PORTA, 16), GPIO_IN, 0, 7, GPIO_PMUXEN},	// GCLK_IO[2]
 };
 
 #define NUM_GPIOS (sizeof(gpios) / sizeof(struct gpio_info))
@@ -46,14 +48,14 @@ static const struct gpio_info gpios[] = {
 // handle a key down
 static void debounce_on_handler(uint32_t bits) {
 	if (bits & (1 << PUSH_BUTTON_BIT)) {
-		DBG("key down\r\n");
+		event_wr(EVENT_TYPE_KEY_DN | 0U, NULL);
 	}
 }
 
 // handle a key up
 static void debounce_off_handler(uint32_t bits) {
 	if (bits & (1 << PUSH_BUTTON_BIT)) {
-		DBG("key up\r\n");
+		event_wr(EVENT_TYPE_KEY_UP | 0U, NULL);
 	}
 }
 
@@ -120,6 +122,8 @@ static void systick_init(uint32_t count) {
 
 int main(void) {
 	int rc;
+
+	clock_init();
 
 	// 1ms system tick
 	systick_init(SystemCoreClock / 1000U);
