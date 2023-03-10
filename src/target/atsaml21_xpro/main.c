@@ -12,8 +12,6 @@ SAML21 Xplained Pro Board (SAML21J18A)
 #include "util.h"
 #include "og.h"
 
-#include "hd44780.h"
-
 #define DEBUG
 #include "logging.h"
 
@@ -94,7 +92,7 @@ static struct opengate og;
 
 void SysTick_Handler(void) {
 	uint32_t ticks = getTick();
-	// blink the green led every 512 ms
+	// blink the board led every 512 ms
 	if ((ticks & 511) == 0) {
 		gpio_toggle_pin(IO_LED0);
 	}
@@ -123,6 +121,7 @@ static void systick_init(uint32_t count) {
 int main(void) {
 	int rc;
 
+	// switch the cpu clock to 48MHz
 	clock_init();
 
 	// 1ms system tick
