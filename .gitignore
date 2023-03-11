@@ -1,1 +1,4 @@
 micropython/dl
+micropython/.stamp_*
+micropython/output
+micropython/src
