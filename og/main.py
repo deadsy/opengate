@@ -1,15 +1,11 @@
 # open gate
 
-from machine import Pin
-import time
+import hd44780
+
 
 def main():
-    led = Pin(25, Pin.OUT)
-    x = 1
-    while True:
-        print("loop %d" % x)
-        led.toggle()
-        x += 1
-        time.sleep(1)
+    lcd = hd44780.LCD(4, (1, 2, 3, 4, 5, 6), 2, 16)
+    lcd.test()
+    lcd.puts(0, 0, "OpenGate")
 
 main()
