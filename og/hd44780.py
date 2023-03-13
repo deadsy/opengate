@@ -7,19 +7,17 @@
 from machine import Pin
 import utime as time
 
-
-LCD_DISPLAY_ON = (0x08 | (1 << 2) | (0 << 1) | (0 << 0))
-LCD_DISPLAY_OFF = (0x08 | (0 << 2) | (0 << 1) | (0 << 0))
-LCD_DISPLAY_CLEAR = (0x01)
-LCD_ENTRY_MODE_SET = (0x04 | (1 << 1) | (0 << 0))
+LCD_DISPLAY_ON = 0x08 | (1 << 2) | (0 << 1) | (0 << 0)
+LCD_DISPLAY_OFF = 0x08 | (0 << 2) | (0 << 1) | (0 << 0)
+LCD_DISPLAY_CLEAR = 0x01
+LCD_ENTRY_MODE_SET = 0x04 | (1 << 1) | (0 << 0)
 
 
 def LCD_FUNCTION_SET(dl, n):
-    return (0x20 | ((dl) << 4) | ((n) << 3) | (0 << 2))
+    return 0x20 | ((dl) << 4) | ((n) << 3) | (0 << 2)
 
 
 class LCD:
-
     def __init__(self, mode, pinlist, rows, cols):
         assert rows in (1, 2, 4), "bad rows"
         assert cols in (16, 20, 24, 40), "bad cols"
@@ -42,10 +40,6 @@ class LCD:
             time.sleep_ms(1)
             self._wr(3)
             self._wr(2)
-            if self.rows == 1:
-                self.wr_cmd(LCD_FUNCTION_SET(0, 0))
-            else:
-                self.wr_cmd(LCD_FUNCTION_SET(0, 1))
         else:
             # 8 bit mode
             time.sleep_ms(16)
@@ -54,10 +48,7 @@ class LCD:
             self._wr(0x30)
             time.sleep_ms(1)
             self._wr(0x30)
-            if self.rows == 1:
-                self.wr_cmd(LCD_FUNCTION_SET(1, 0))
-            else:
-                self.wr_cmd(LCD_FUNCTION_SET(1, 1))
+        self.wr_cmd(LCD_FUNCTION_SET((1, 0)[self.mode == 4], (1, 0)[self.rows == 1]))
         self.wr_cmd(LCD_DISPLAY_ON)
         self.clr()
         self.wr_cmd(LCD_ENTRY_MODE_SET)
@@ -96,11 +87,11 @@ class LCD:
         if row == 0:
             self.wr_cmd(0x80 + col)
         elif row == 1:
-            self.wr_cmd(0xc0 + col)
+            self.wr_cmd(0xC0 + col)
         elif row == 2:
             self.wr_cmd(0x80 + self.cols + col)
         elif row == 3:
-            self.wr_cmd(0xc0 + self.cols + col)
+            self.wr_cmd(0xC0 + self.cols + col)
 
     def clr(self):  # clear the display
         self.wr_cmd(LCD_DISPLAY_CLEAR)
@@ -115,7 +106,7 @@ class LCD:
     def clr_row(self, row):  # clear a display row
         self.set_cursor(row, 0)
         for i in range(self.cols):
-            self.wr_data(' ')
+            self.wr_data(" ")
         self.set_cursor(row, 0)
 
     def putc(self, row, col, c):  # display a character
@@ -133,5 +124,5 @@ class LCD:
         k = 0
         for i in range(self.rows):
             for j in range(self.cols):
-                self.putc(i, j, chr(ord('A') + (k % 26)))
+                self.putc(i, j, chr(ord("A") + (k % 26)))
                 k += 1
