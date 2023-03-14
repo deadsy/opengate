@@ -93,6 +93,11 @@ class LCD:
         elif row == 3:
             self.wr_cmd(0xC0 + self.cols + col)
 
+    def symbol(self, id, data): # user defined symbol
+        self.wr_cmd(0x40 + ((id & 7) << 3))
+        for i in range(8):
+            self.wr_data(data[i])
+
     def clr(self):  # clear the display
         self.wr_cmd(LCD_DISPLAY_CLEAR)
         time.sleep_ms(2)
