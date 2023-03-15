@@ -17,12 +17,13 @@ r1 = relay.relay("r1", 16)
 
 # sim7600 modem
 uart = UART(0)
-uart.init(baudrate=115200) # tx=0, rx=1
+uart.init(baudrate=115200)  # tx=0, rx=1
 modem = sim7600.modem(uart, pwr=11, fc=6)
 print("%s" % modem)
 
+
 def main():
-    lcd.symbol(0, (0, 0x0a,0x1f,0x1f,0xe,0x04,0,0))
+    lcd.symbol(0, (0, 0x0A, 0x1F, 0x1F, 0xE, 0x04, 0, 0))
     s0 = scroll.scroll("\x00Arbeit Macht Frei...", 16, lambda s: lcd.puts(0, 0, s))
     s1 = scroll.scroll("\x00\x00\x00Arby's Makes Fries...", 16, lambda s: lcd.puts(1, 0, s))
     while True:

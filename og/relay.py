@@ -2,6 +2,7 @@
 
 from machine import Pin
 
+
 class relay:
     def __init__(self, name, pin, state=False):
         self.state = state

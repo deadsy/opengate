@@ -27,7 +27,6 @@ class keystate:
 
 
 class matrix:
-
     def __init__(self, rowpins, colpins):
         assert len(rowpins) >= 1, "bad rows"
         assert len(colpins) >= 1, "bad cols"
@@ -35,7 +34,7 @@ class matrix:
         self.col_io = [Pin(x, Pin.IN) for x in colpins]
         self.rows = len(rowpins)
         self.cols = len(colpins)
-        self.state = [keystate(),] * (self.rows * self.cols)
+        self.state = [keystate()] * (self.rows * self.cols)
         self.debounce_dn = 1
         self.debounce_up = 2
         # init rows

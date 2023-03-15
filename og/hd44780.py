@@ -93,7 +93,8 @@ class LCD:
         elif row == 3:
             self.wr_cmd(0xC0 + self.cols + col)
 
-    def symbol(self, id, data): # user defined symbol
+    def symbol(self, id, data):  # user defined symbol
+        assert len(data) == 8, "bad data"
         self.wr_cmd(0x40 + ((id & 7) << 3))
         for i in range(8):
             self.wr_data(data[i])
