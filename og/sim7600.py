@@ -22,22 +22,18 @@ def check_response(s):
 
 
 class modem:
-    def __init__(self, uart, pwr_pin, fc_pin):
+    def __init__(self, uart, pwr):
         self.uart = uart
-        self.pwr_io = Pin(pwr_pin, Pin.OUT)
-        self.fc_io = Pin(fc_pin, Pin.OUT)
+        self.pwr_io = Pin(pwr, Pin.OUT)
         self.info = None
-
-    def flight_control(self, state):
-        self.fc_io.value(state)
 
     def power(self, state):
         self.pwr_io.value(state)
 
-    def cmd(self, cmd):
+    def cmd(self, cmd, timeout=20):
         self.uart.write("AT%s\r" % cmd)
         rsp = b""
-        while True:
+        while timeout > 0:
             rx = self.uart.read()
             if rx is not None:
                 rsp += rx
@@ -45,6 +41,7 @@ class modem:
                     break
                 if rsp.endswith("\r\n") and "ERROR" in rsp:
                     break
+            timeout -= 1
         return rsp
 
     def set_echo(self, state):  # set the command echo
@@ -88,14 +85,26 @@ class modem:
         assert len(x) == 2, "bad sq decode"
         return (int(x[0]), int(x[1]))
 
+    def set_fun(self, fun):  # set phone functionality
+        assert fun in (0, 1, 4, 5, 6, 7), "bad fun"
+        rsp = self.cmd("+CFUN=%d" % fun)
+        check_response(rsp)
+
+    def gps(self, on, mode=1):  # gps start/stop
+        assert type(on) == bool, "bad on/off"
+        assert mode in (1, 2, 3), "bad mode"
+        rsp = self.cmd("+CGPS=%d,%d" % ((0, 1)[on], mode))
+        check_response(rsp)
+
+    def gps_info(self):  # return gps data
+        rsp = self.cmd("+CGPSINFO=1")
+        check_response(rsp)
+        print(rsp)
+
     def setup(self):  # initial modem setup
-        self.flight_control(False)
-        self.power(False)
-        time.sleep_ms(100)
-        self.power(True)
-        time.sleep_ms(100)
         self.set_echo(False)  # echo off
         self.set_cmee(2)  # string error codes
+        self.set_fun(1)  # full functionality
         self.info = self.get_info()
         self.info["ICCID"] = self.get_iccid()
         self.info["IMSI"] = self.get_imsi()

@@ -18,13 +18,19 @@ r1 = relay.relay("r1", 16)
 # sim7600 modem
 uart = UART(0)
 uart.init(baudrate=115200, timeout=20)  # tx=0, rx=1
-modem = sim7600.modem(uart, pwr_pin=11, fc_pin=6)
+modem = sim7600.modem(uart, pwr=11)
 
 
 def main():
     modem.setup()
     print(modem)
     print(modem.get_sq())
+    modem.gps(False)
+    modem.gps(True)
+
+    while True:
+        modem.gps_info()
+        time.sleep_ms(1000)
 
     # lcd.symbol(0, (0, 0x0A, 0x1F, 0x1F, 0xE, 0x04, 0, 0))
     # s0 = scroll.scroll("\x00Arbeit Macht Frei...", 16, lambda s: lcd.puts(0, 0, s))
