@@ -21,16 +21,69 @@ def check_response(s):
         raise modem_error("error")
 
 
+def to_float(s):
+    if s == b"":
+        return None
+    return float(s)
+
+
+def to_date(s):
+    assert len(s) == 6, "bad date"
+    d = int(s[0:2])
+    m = int(s[2:4])
+    y = int(s[4:6])
+    return (y, m, d)
+
+
+def decode_gps(s):
+    if b"+CGPSINFO:" not in s:
+        return None  # no data
+    x = s.strip().split(b":")[1].strip()
+    if len(x) == x.count(b","):
+        return None  # all commas
+    x = x.split(b",")
+    assert len(x) == 9, "bad info"
+    info = {}
+    # latitude
+    assert len(x[0]) == 11, "bad lat"
+    lat_deg = x[0][0:2]
+    lat_min = x[0][2:]
+    lat = float(lat_deg) + float(lat_min) * (1.0 / 60.0)
+    assert x[1] in b"NS", "bad NS"
+    lat *= (-1.0, 1.0)[x[1] == b"N"]
+    info["lat"] = lat
+    # longitude
+    assert len(x[2]) == 12, "bad lon"
+    lon_deg = x[2][0:3]
+    lon_min = x[2][3:]
+    lon = float(lon_deg) + float(lon_min) * (1.0 / 60.0)
+    assert x[3] in b"EW", "bad EW"
+    lon *= (-1.0, 1.0)[x[3] == b"E"]
+    info["lon"] = lon
+    # date/time
+    info["date"] = to_date(x[4])
+    info["time"] = to_float(x[5])
+    # other
+    info["alt"] = to_float(x[6])
+    info["speed"] = to_float(x[7])
+    info["course"] = to_float(x[8])
+    return info
+
+
 class modem:
     def __init__(self, uart, pwr):
         self.uart = uart
         self.pwr_io = Pin(pwr, Pin.OUT)
         self.info = None
 
-    def power(self, state):
-        self.pwr_io.value(state)
+    def reset(self):  # reset the modem
+        self.pwr_io.value(0)
+        time.sleep_ms(100)
+        self.pwr_io.value(1)
+        time.sleep_ms(500)
+        self.pwr_io.value(0)
 
-    def cmd(self, cmd, timeout=20):
+    def cmd(self, cmd, timeout=10):  # send an AT command
         self.uart.write("AT%s\r" % cmd)
         rsp = b""
         while timeout > 0:
@@ -48,6 +101,10 @@ class modem:
         rsp = self.cmd(("E0", "E1")[state])
         check_response(rsp)
 
+    def set_cmee(self, mode):  # set the error code return type
+        rsp = self.cmd("+CMEE=%d" % mode)
+        check_response(rsp)
+
     def get_info(self):  # get modem information
         rsp = self.cmd("I")
         check_response(rsp)
@@ -59,10 +116,6 @@ class modem:
                 v = x[1].strip()
                 info[t.decode("utf-8")] = v.decode("utf-8")
         return info
-
-    def set_cmee(self, mode):  # set the error code return type
-        rsp = self.cmd("+CMEE=%d" % mode)
-        check_response(rsp)
 
     def get_iccid(self):  # get the sim card ICCID
         rsp = self.cmd("+CICCID")
@@ -99,7 +152,8 @@ class modem:
     def gps_info(self):  # return gps data
         rsp = self.cmd("+CGPSINFO=1")
         check_response(rsp)
-        print(rsp)
+        x = rsp.strip().split(b"\r\n")[0]
+        return decode_gps(x)
 
     def setup(self):  # initial modem setup
         self.set_echo(False)  # echo off

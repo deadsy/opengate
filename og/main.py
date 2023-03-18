@@ -7,6 +7,7 @@ import sim7600
 
 import utime as time
 from machine import UART
+from machine import Pin
 
 # lcd display
 lcd = hd44780.LCD(4, (10, 11, 6, 7, 8, 9), 2, 16)
@@ -22,14 +23,16 @@ modem = sim7600.modem(uart, pwr=11)
 
 
 def main():
+    led_io = Pin(25, Pin.OUT)
     modem.setup()
     print(modem)
-    print(modem.get_sq())
-    modem.gps(False)
-    modem.gps(True)
+
+    # modem.gps(False)
+    # modem.gps(True)
 
     while True:
-        modem.gps_info()
+        led_io.toggle()
+        # print(modem.gps_info())
         time.sleep_ms(1000)
 
     # lcd.symbol(0, (0, 0x0A, 0x1F, 0x1F, 0xE, 0x04, 0, 0))
