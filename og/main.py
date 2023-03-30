@@ -26,6 +26,8 @@ def main():
     led_io = Pin(25, Pin.OUT)
     modem.setup()
     print(modem)
+    print(modem.get_sms_format())
+    # modem.set_sms_format(1)
 
     # modem.gps(False)
     # modem.gps(True)

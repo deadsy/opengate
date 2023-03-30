@@ -75,6 +75,7 @@ class modem:
         self.uart = uart
         self.pwr_io = Pin(pwr, Pin.OUT)
         self.info = None
+        self.sim = None
 
     def reset(self):  # reset the modem
         self.pwr_io.value(0)
@@ -105,7 +106,7 @@ class modem:
         rsp = self.cmd("+CMEE=%d" % mode)
         check_response(rsp)
 
-    def get_info(self):  # get modem information
+    def get_modem_info(self):  # get modem information
         rsp = self.cmd("I")
         check_response(rsp)
         info = {}
@@ -115,6 +116,13 @@ class modem:
                 t = x[0].strip()
                 v = x[1].strip()
                 info[t.decode("utf-8")] = v.decode("utf-8")
+        return info
+
+    def get_sim_info(self):  # get sim card info
+        info = {}
+        info["ICCID"] = self.get_iccid()
+        info["IMSI"] = self.get_imsi()
+        info["SUBNUM"] = self.get_subnum()
         return info
 
     def get_iccid(self):  # get the sim card ICCID
@@ -149,6 +157,53 @@ class modem:
         rsp = self.cmd("+CGPS=%d,%d" % ((0, 1)[on], mode))
         check_response(rsp)
 
+    def cpin(self):
+        rsp = self.cmd("+CPIN?")
+        check_response(rsp)
+        print(rsp)
+
+    def get_subnum(self):  # get subscriber number (alpha, num, type)
+        rsp = self.cmd("+CNUM")
+        check_response(rsp)
+        x = rsp.strip().split(b"\r\n")[0]
+        x = x.split(b":")[1].strip().split(b",")
+        a = x[0].strip(b'"').decode("utf-8")
+        n = x[1].strip(b'"').decode("utf-8")
+        t = int(x[2])
+        return (a, n, t)
+
+    def get_network_operator(self):
+        rsp = self.cmd("+COPS?")
+        check_response(rsp)
+        print(rsp)
+        x = rsp.strip().split(b"\r\n")[0]
+        x = x.split(b":")[1].strip().split(b",")
+        info = {}
+        info["mode"] = int(x[0])
+        info["format"] = int(x[1])
+        info["operator"] = x[2].strip(b'"').decode("utf-8")
+        info["act"] = int(x[3])
+        return info
+
+    def get_sms_sca(self):  # get sms service center address
+        rsp = self.cmd("+CSCA?")
+        check_response(rsp)
+        print(rsp)
+
+    def get_sms_format(self):  # get sms message format
+        rsp = self.cmd("+CMGF?")
+        check_response(rsp)
+        x = rsp.strip().split(b"\r\n")[0]
+        x = x.split(b":")[1].strip()
+        return int(x)
+
+    def set_sms_format(self, mode):  # set sms message format
+        assert mode in (0, 1), "bad mode"
+        # rsp = self.cmd("AT+CMGF=%d" % mode)
+        rsp = self.cmd("AT+CMGF=?")
+        print(rsp)
+        check_response(rsp)
+
     def gps_info(self):  # return gps data
         rsp = self.cmd("+CGPSINFO=1")
         check_response(rsp)
@@ -159,12 +214,13 @@ class modem:
         self.set_echo(False)  # echo off
         self.set_cmee(2)  # string error codes
         self.set_fun(1)  # full functionality
-        self.info = self.get_info()
-        self.info["ICCID"] = self.get_iccid()
-        self.info["IMSI"] = self.get_imsi()
+        self.info = self.get_modem_info()
+        self.sim = self.get_sim_info()
 
     def __str__(self):
         s = []
         for k, v in self.info.items():
+            s.append("%s: %s" % (k, v))
+        for k, v in self.sim.items():
             s.append("%s: %s" % (k, v))
         return "\n".join(s)
