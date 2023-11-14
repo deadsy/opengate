@@ -8,7 +8,7 @@ SRC_DIR = $(CURRENT_DIR)/src
 OUTPUT_DIR = $(CURRENT_DIR)/output
 
 # micropython (https://micropython.org/)
-MICROPY_VER = 1.19
+MICROPY_VER = 1.21.0
 MICROPY_URL = https://github.com/micropython/micropython/releases/download/v$(MICROPY_VER)/micropython-$(MICROPY_VER).tar.xz
 MICROPY_FILE = micropython-$(MICROPY_VER).tar.xz
 MICROPY_TXZ = $(DL_DIR)/$(MICROPY_FILE)
@@ -29,7 +29,7 @@ all: .stamp_output
 
 .stamp_output: .stamp_build
 	mkdir -p $(OUTPUT_DIR)
-	cp $(MICROPY_SRC)/ports/rp2/build-PICO/firmware.* $(OUTPUT_DIR)
+	cp $(MICROPY_SRC)/ports/rp2/build-RPI_PICO/firmware.* $(OUTPUT_DIR)
 	touch $@
 
 .stamp_build: .stamp_src
