@@ -1,4 +1,5 @@
 # relay driver
+# https://www.waveshare.com/rpi-relay-board.htm
 
 from machine import Pin
 
@@ -19,6 +20,9 @@ class relay:
 
     def off(self):
         self.set(False)
+
+    def toggle(self):
+        self.set(not self.state)
 
     def __str__(self):
         return "%s %s" % (self.name, ("off", "on")[self.state])

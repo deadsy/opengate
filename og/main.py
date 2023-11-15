@@ -15,6 +15,7 @@ lcd = hd44780.LCD(4, (10, 11, 6, 7, 8, 9), 2, 16)
 # relay board
 r0 = relay.relay("r0", 14)
 r1 = relay.relay("r1", 16)
+r2 = relay.relay("r2", 15)
 
 # sim7600 modem
 uart = UART(0)
@@ -27,13 +28,25 @@ def main():
     modem.setup()
     print(modem)
     print(modem.get_sms_format())
+
     # modem.set_sms_format(1)
 
     # modem.gps(False)
     # modem.gps(True)
 
+    rstate = 0
+
     while True:
         led_io.toggle()
+
+        if rstate == 0:
+            r0.toggle()
+        elif rstate == 1:
+            r1.toggle()
+        elif rstate == 2:
+            r2.toggle()
+        rstate = (rstate + 1) % 3
+
         # print(modem.gps_info())
         time.sleep_ms(1000)
 
