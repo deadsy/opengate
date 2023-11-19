@@ -2,6 +2,7 @@
 
 import utime as time
 from machine import Pin
+import gsm
 
 
 class modem_error(Exception):
@@ -84,8 +85,7 @@ class modem:
         time.sleep_ms(500)
         self.pwr_io.value(0)
 
-    def cmd(self, cmd, timeout=10):  # send an AT command
-        self.uart.write("AT%s\r" % cmd)
+    def get_response(self, timeout=10):  # get the command response
         rsp = b""
         while timeout > 0:
             rx = self.uart.read()
@@ -97,6 +97,10 @@ class modem:
                     break
             timeout -= 1
         return rsp
+
+    def cmd(self, cmd):  # send an AT command
+        self.uart.write("AT%s\r" % cmd)
+        return self.get_response()
 
     def set_echo(self, state):  # set the command echo
         rsp = self.cmd(("E0", "E1")[state])
@@ -175,7 +179,6 @@ class modem:
     def get_network_operator(self):
         rsp = self.cmd("+COPS?")
         check_response(rsp)
-        print(rsp)
         x = rsp.strip().split(b"\r\n")[0]
         x = x.split(b":")[1].strip().split(b",")
         info = {}
@@ -188,7 +191,12 @@ class modem:
     def get_sms_sca(self):  # get sms service center address
         rsp = self.cmd("+CSCA?")
         check_response(rsp)
-        print(rsp)
+        x = rsp.strip().split(b"\r\n")[0]
+        x = x.split(b":")[1].strip().split(b",")
+        info = {}
+        info["sca"] = x[0].strip(b'"').decode("utf-8")
+        info["tosca"] = int(x[1])
+        return info
 
     def get_sms_format(self):  # get sms message format
         rsp = self.cmd("+CMGF?")
@@ -199,9 +207,23 @@ class modem:
 
     def set_sms_format(self, mode):  # set sms message format
         assert mode in (0, 1), "bad mode"
-        # rsp = self.cmd("AT+CMGF=%d" % mode)
-        rsp = self.cmd("AT+CMGF=?")
-        print(rsp)
+        rsp = self.cmd("+CMGF=%d" % mode)
+        check_response(rsp)
+
+    def sms_send_pdu(self, dst, msg):  # send sms message in pdu form
+        out = gsm.smsMessage(dst, msg)
+        s = "".join(["%02X" % c for c in out])
+        self.uart.write("AT+CMGS=%d\r" % len(out))
+        time.sleep_ms(10)
+        self.uart.write("00%s\x1a" % s)
+        rsp = self.get_response()
+        check_response(rsp)
+
+    def sms_send_txt(self, dst, msg):  # send sms message in text form
+        self.uart.write('AT+CMGS="%s"\r' % dst)
+        time.sleep_ms(10)
+        self.uart.write("%s\x1a" % msg)
+        rsp = self.get_response()
         check_response(rsp)
 
     def gps_info(self):  # return gps data
