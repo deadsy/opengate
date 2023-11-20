@@ -58,11 +58,11 @@ def main():
     modem.setup()
     print(modem)
 
-    modem.set_sms_format(1)
-    modem.sms_send_txt("+14087102537", "text message from opengate!")
+    # modem.set_sms_format(1)
+    # modem.sms_send_txt("+14087102537", "text message from opengate!")
 
-    # modem.set_sms_format(0)
-    # modem.sms_send_pdu("+14087102537", "pdu message from opengate!")
+    modem.set_sms_format(0)
+    modem.sms_send_pdu("+14087102537", "pdu message from opengate!")
 
     print("done")
 

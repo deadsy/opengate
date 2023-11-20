@@ -11,17 +11,6 @@ class modem_error(Exception):
         super().__init__(self.msg)
 
 
-def check_response(s):
-    if s is None or len(s) == 0:
-        raise modem_error("no response")
-    if "+CME ERROR" in s:
-        x = s.strip().split(b":")
-        msg = x[1].strip().decode("utf-8")
-        raise modem_error(msg)
-    if s.endswith("ERROR\r\n"):
-        raise modem_error("error")
-
-
 def to_float(s):
     if s == b"":
         return None
@@ -96,6 +85,15 @@ class modem:
                 if rsp.endswith("\r\n") and "ERROR" in rsp:
                     break
             timeout -= 1
+        # check the response for errors
+        if rsp is None or len(rsp) == 0:
+            raise modem_error("no response")
+        if "+CME ERROR" in rsp:
+            x = rsp.strip().split(b":")
+            msg = x[1].strip().decode("utf-8")
+            raise modem_error(msg)
+        if rsp.endswith("ERROR\r\n"):
+            raise modem_error("error")
         return rsp
 
     def cmd(self, cmd):  # send an AT command
@@ -103,16 +101,13 @@ class modem:
         return self.get_response()
 
     def set_echo(self, state):  # set the command echo
-        rsp = self.cmd(("E0", "E1")[state])
-        check_response(rsp)
+        self.cmd(("E0", "E1")[state])
 
     def set_cmee(self, mode):  # set the error code return type
-        rsp = self.cmd("+CMEE=%d" % mode)
-        check_response(rsp)
+        self.cmd("+CMEE=%d" % mode)
 
     def get_modem_info(self):  # get modem information
         rsp = self.cmd("I")
-        check_response(rsp)
         info = {}
         for s in rsp.split(b"\r\n"):
             x = s.split(b":")
@@ -131,20 +126,17 @@ class modem:
 
     def get_iccid(self):  # get the sim card ICCID
         rsp = self.cmd("+CICCID")
-        check_response(rsp)
         x = rsp.strip().split(b"\r\n")[0]
         x = x.split(b":")[1].strip()
         return x.decode("utf-8")
 
     def get_imsi(self):  # get the sim card IMSI
         rsp = self.cmd("+CIMI")
-        check_response(rsp)
         x = rsp.strip().split(b"\r\n")[0]
         return x.decode("utf-8")
 
     def get_sq(self):  # get signal quality (rssi, ber)
         rsp = self.cmd("+CSQ")
-        check_response(rsp)
         x = rsp.strip().split(b"\r\n")[0]
         x = x.split(b":")[1].strip().split(b",")
         assert len(x) == 2, "bad sq decode"
@@ -152,23 +144,19 @@ class modem:
 
     def set_fun(self, fun):  # set phone functionality
         assert fun in (0, 1, 4, 5, 6, 7), "bad fun"
-        rsp = self.cmd("+CFUN=%d" % fun)
-        check_response(rsp)
+        self.cmd("+CFUN=%d" % fun)
 
     def gps(self, on, mode=1):  # gps start/stop
         assert type(on) == bool, "bad on/off"
         assert mode in (1, 2, 3), "bad mode"
-        rsp = self.cmd("+CGPS=%d,%d" % ((0, 1)[on], mode))
-        check_response(rsp)
+        self.cmd("+CGPS=%d,%d" % ((0, 1)[on], mode))
 
     def cpin(self):
         rsp = self.cmd("+CPIN?")
-        check_response(rsp)
         print(rsp)
 
     def get_subnum(self):  # get subscriber number (alpha, num, type)
         rsp = self.cmd("+CNUM")
-        check_response(rsp)
         x = rsp.strip().split(b"\r\n")[0]
         x = x.split(b":")[1].strip().split(b",")
         a = x[0].strip(b'"').decode("utf-8")
@@ -178,7 +166,6 @@ class modem:
 
     def get_network_operator(self):
         rsp = self.cmd("+COPS?")
-        check_response(rsp)
         x = rsp.strip().split(b"\r\n")[0]
         x = x.split(b":")[1].strip().split(b",")
         info = {}
@@ -190,7 +177,6 @@ class modem:
 
     def get_sms_sca(self):  # get sms service center address
         rsp = self.cmd("+CSCA?")
-        check_response(rsp)
         x = rsp.strip().split(b"\r\n")[0]
         x = x.split(b":")[1].strip().split(b",")
         info = {}
@@ -200,15 +186,13 @@ class modem:
 
     def get_sms_format(self):  # get sms message format
         rsp = self.cmd("+CMGF?")
-        check_response(rsp)
         x = rsp.strip().split(b"\r\n")[0]
         x = x.split(b":")[1].strip()
         return int(x)
 
     def set_sms_format(self, mode):  # set sms message format
         assert mode in (0, 1), "bad mode"
-        rsp = self.cmd("+CMGF=%d" % mode)
-        check_response(rsp)
+        self.cmd("+CMGF=%d" % mode)
 
     def sms_send_pdu(self, dst, msg):  # send sms message in pdu form
         out = gsm.smsMessage(dst, msg)
@@ -216,19 +200,16 @@ class modem:
         self.uart.write("AT+CMGS=%d\r" % len(out))
         time.sleep_ms(10)
         self.uart.write("00%s\x1a" % s)
-        rsp = self.get_response()
-        check_response(rsp)
+        self.get_response()
 
     def sms_send_txt(self, dst, msg):  # send sms message in text form
         self.uart.write('AT+CMGS="%s"\r' % dst)
         time.sleep_ms(10)
         self.uart.write("%s\x1a" % msg)
-        rsp = self.get_response()
-        check_response(rsp)
+        self.get_response()
 
     def gps_info(self):  # return gps data
         rsp = self.cmd("+CGPSINFO=1")
-        check_response(rsp)
         x = rsp.strip().split(b"\r\n")[0]
         return decode_gps(x)
 
