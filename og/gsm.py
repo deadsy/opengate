@@ -4,23 +4,33 @@ defSet = (
     "@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞ\x1bÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?"
     "¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà"
 )
-extSet = (
-    "````````````````````^```````````````````{}`````\\````````````[~]`"
-    "|````````````````````````````````````€``````````````````````````"
-)
+
+gsmChar = {}
 
 
-def defString(s):  # encode a string using the sms default and extended character sets
+def init():  # init the gsm character lookup
+    global gsmChar
+    # basic gsm-7 characters
+    for i, c in enumerate(defSet):
+        gsmChar[c] = (i,)
+    # extended characters
+    gsmChar["^"] = (0x1B, 0x14)
+    gsmChar["{"] = (0x1B, 0x28)
+    gsmChar["}"] = (0x1B, 0x29)
+    gsmChar["\\"] = (0x1B, 0x2F)
+    gsmChar["["] = (0x1B, 0x3C)
+    gsmChar["~"] = (0x1B, 0x3D)
+    gsmChar["]"] = (0x1B, 0x3E)
+    gsmChar["|"] = (0x1B, 0x40)
+    gsmChar["€"] = (0x1B, 0x65)
+
+
+def convString(s):
     buf = bytearray()
+    defChar = gsmChar["?"]
     for c in s:
-        idx = defSet.find(c)
-        if idx != -1:
-            buf.append(idx)
-            continue
-        idx = extSet.find(c)
-        if idx != -1:
-            buf.append(0x1B)
-            buf.append(idx)
+        for x in gsmChar.get(c, defChar):
+            buf.append(x)
     return buf
 
 
@@ -38,9 +48,10 @@ def pack7(buf, src):  # pack a 7-bit string
         buf.append(data & 0xFF)
 
 
-def encodeMessage(buf, src):  # encode a string to a 7-bit sms message
-    buf.append(len(src))
-    pack7(buf, defString(src))
+def encodeMessage(buf, msg):  # encode a string to a 7-bit sms message
+    tmp = convString(msg)
+    buf.append(len(tmp))
+    pack7(buf, tmp)
 
 
 def encodeNumber(buf, src):  # encode a phone number in octet form

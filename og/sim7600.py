@@ -151,10 +151,6 @@ class modem:
         assert mode in (1, 2, 3), "bad mode"
         self.cmd("+CGPS=%d,%d" % ((0, 1)[on], mode))
 
-    def cpin(self):
-        rsp = self.cmd("+CPIN?")
-        print(rsp)
-
     def get_subnum(self):  # get subscriber number (alpha, num, type)
         rsp = self.cmd("+CNUM")
         x = rsp.strip().split(b"\r\n")[0]
@@ -206,6 +202,30 @@ class modem:
         self.uart.write('AT+CMGS="%s"\r' % dst)
         time.sleep_ms(10)
         self.uart.write("%s\x1a" % msg)
+        self.get_response()
+
+    def set_call_voice_device(self, mode):
+        assert mode in (0, 1, 3), "bad mode"
+        self.cmd("+CSDVC=%d" % mode)
+
+    def get_call_voice_device(self):
+        rsp = self.cmd("+CSDVC?")
+        x = rsp.strip().split(b"\r\n")[0]
+        x = x.split(b":")[1].strip()
+        return int(x)
+
+    def set_call_loudspeaker_level(self, level):
+        assert level in (0, 1, 2, 3, 4, 5), "bad level"
+        self.cmd("+CLVL=%d" % level)
+
+    def get_call_loudspeaker_level(self):
+        rsp = self.cmd("+CLVL?")
+        x = rsp.strip().split(b"\r\n")[0]
+        x = x.split(b":")[1].strip()
+        return int(x)
+
+    def make_call(self, dst):
+        self.uart.write("ATD%s;\r" % dst)
         self.get_response()
 
     def gps_info(self):  # return gps data

@@ -57,12 +57,17 @@ def dump(s):
 def main():
     modem.setup()
     print(modem)
+    gsm.init()
 
     # modem.set_sms_format(1)
     # modem.sms_send_txt("+14087102537", "text message from opengate!")
 
     modem.set_sms_format(0)
-    modem.sms_send_pdu("+14087102537", "pdu message from opengate!")
+    modem.sms_send_pdu("+14087102537", "[]{} \xf1\xf2 pdu message from opengate!")
+
+    # modem.set_call_voice_device(1)
+    # modem.set_call_loudspeaker_level(5)
+    # modem.make_call("+14087102537")
 
     print("done")
 
