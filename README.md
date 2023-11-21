@@ -1,4 +1,4 @@
-# opengate
+# OpenGate
 A homebrew open source gate entry system.
 
 ## Gate Systems
@@ -11,8 +11,8 @@ A gate system has 3 components.
 
 A person who wants access approaches the entry system and:
 
-* enters a security code: if the code is correct they are granted access. 
-* calls a designated person(s): if the called person grants access they send some dtmf tones to open the gate.
+* Enters a security code: If the code is correct they are granted access. 
+* Calls a designated person(s): If the called person grants access they send dtmf tones to open the gate.
 
 
 ## Problem
@@ -37,23 +37,23 @@ The service provider needs to support the modem used.
 This can be confirmed by checking the modem's IMEI on the "bring your own phone" page.
 
 
-# parts
+# Parts
 
 Raspberry Pi Pico (rp2040)
 
-Cellular Modem SIM7600G-H https://www.waveshare.com/wiki/SIM7600E-H_4G_HAT
+Cellular Modem (https://www.waveshare.com/wiki/SIM7600E-H_4G_HAT)
 
 speaker (output)
 
 microphone (input)
 
-16x2 lcd (output)
+16x2 LCD (output)
 
 keyboard + buttons (input)
 
 MT8870 DTMF decoder (the cellular modem doesn't have it :-()
 
-Relay control board https://www.waveshare.com/rpi-relay-board.htm
+Relay board (https://www.waveshare.com/rpi-relay-board.htm)
 
 
 
