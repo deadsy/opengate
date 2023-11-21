@@ -29,70 +29,31 @@ The only reason I need a land line is for the gate system. This costs around $16
 
 ## Solution
 
+The cost for a cellular based solution is around $15/month for a cheap connectivity provider.
 
+E.g. https://tello.com/ 
 
-
-
+The service provider needs to support the modem used.
+This can be confirmed by checking the modem's IMEI on the "bring your own phone" page.
 
 
 # parts
 
-Raspberry Pi 4
+Raspberry Pi Pico (rp2040)
 
-rpi hat for cellular
+Cellular Modem SIM7600G-H https://www.waveshare.com/wiki/SIM7600E-H_4G_HAT
+
 speaker (output)
+
 microphone (input)
 
-lcd control (output)
+16x2 lcd (output)
 
 keyboard + buttons (input)
 
-SIM7600G-H
-https://www.waveshare.com/wiki/SIM7600E-H_4G_HAT
-Uses RPi pins 7,8,10,31
+MT8870 DTMF decoder (the cellular modem doesn't have it :-()
 
-SIM7600A-H
-IMEI: 868022030011576
+Relay control board https://www.waveshare.com/rpi-relay-board.htm
 
-# standards
 
-1G - Analog
-
-GSM - Global System for Mobile Communications
-https://en.wikipedia.org/wiki/GSM
-
-2G
-
-GPRS
-
-EDGE
-
-UMTS
-
-3G
-
-HSPA
-
-HSPA+
-
-4G
-
-LTE
-
-LTE+
-
-5G
-
-6G
-
-SMS
-
-GNSS
-
-GPS
-
-GLOSNAS
-
-IMEI
-https://en.wikipedia.org/wiki/International_Mobile_Equipment_Identity
 
