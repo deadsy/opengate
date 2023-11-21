@@ -11,67 +11,62 @@ extSet = (
 
 
 def defString(s):  # encode a string using the sms default and extended character sets
-    out = []
+    buf = bytearray()
     for c in s:
         idx = defSet.find(c)
         if idx != -1:
-            out.append(idx)
+            buf.append(idx)
             continue
         idx = extSet.find(c)
         if idx != -1:
-            out.extend((27, idx))
-    return out
+            buf.append(0x1B)
+            buf.append(idx)
+    return buf
 
 
-def pack7(s):  # pack a 7-bit string
+def pack7(buf, src):  # pack a 7-bit string
     bits = 0
     data = 0
-    out = bytearray()
-    for c in s:
+    for c in src:
         data |= c << bits
         bits += 7
         while bits >= 8:
-            out.append(data & 0xFF)
+            buf.append(data & 0xFF)
             data >>= 8
             bits -= 8
     if bits > 0:
-        out.append(data & 0xFF)
-    return out
+        buf.append(data & 0xFF)
 
 
-def encodeMessage(s):  # encode a string to a 7-bit sms message
-    out = []
-    out.append(len(s))
-    out.extend(pack7(defString(s)))
-    return out
+def encodeMessage(buf, src):  # encode a string to a 7-bit sms message
+    buf.append(len(src))
+    pack7(buf, defString(src))
 
 
-def encodeNumber(s):  # encode a phone number in octet form
-    out = []
-    s = s.strip()
-    assert len(s) != 0, "bad number"
-    if s[0] == "+":  # international number
-        out.append(len(s) - 1)
-        out.append(0x91)
-        s = s[1:]
+def encodeNumber(buf, src):  # encode a phone number in octet form
+    src = src.strip()
+    assert len(src) != 0, "bad number"
+    if src[0] == "+":  # international number
+        buf.append(len(src) - 1)
+        buf.append(0x91)
+        src = src[1:]
     else:
-        out.append(len(s))
-        out.append(0x81)
-    if len(s) & 1 != 0:
-        s += "f"
-    for i in range(0, len(s), 2):
-        x = "%c%c" % (s[i + 1], s[i])
-        out.append(int(x, 16))
-    return out
+        buf.append(len(src))
+        buf.append(0x81)
+    if len(src) & 1 != 0:
+        src += "f"
+    for i in range(0, len(src), 2):
+        x = "%c%c" % (src[i + 1], src[i])
+        buf.append(int(x, 16))
 
 
 def smsMessage(dst, msg):  # build an sms message
-    out = []
-    out.append(0x11)
-    out.append(0)
-    out.extend(encodeNumber(dst))
-    out.append(0)
-    out.append(0)
-    out.append(0xAA)
-    out.extend(encodeMessage(msg))
-    return out
+    buf = bytearray()
+    buf.append(0x11)
+    buf.append(0)
+    encodeNumber(buf, dst)
+    buf.append(0)
+    buf.append(0)
+    buf.append(0xAA)
+    encodeMessage(buf, msg)
+    return buf
