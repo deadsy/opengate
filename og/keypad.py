@@ -2,8 +2,20 @@
 
 from machine import Pin
 import utime as time
+import uasyncio as asyncio
 
+# time between row polls (ms)
 ROW_POLL_TIME = 16
+
+# row select active high/low
+ROW_SELECT_HIGH = True
+
+# input pull up/down
+INPUT_PULL = (Pin.PULL_UP, Pin.PULL_DOWN)[ROW_SELECT_HIGH]
+
+# debounce counts
+DEBOUNCE_DN_COUNT = 0
+DEBOUNCE_UP_COUNT = 1
 
 # key state
 KEY_STATE_UNKNOWN = 0
@@ -27,27 +39,32 @@ class keystate:
 
 
 class matrix:
-    def __init__(self, rowpins, colpins):
+    def __init__(self, event_out, rowpins, colpins):
         assert len(rowpins) >= 1, "bad rows"
         assert len(colpins) >= 1, "bad cols"
+        self.queue = event_out
         self.row_io = [Pin(x, Pin.OUT) for x in rowpins]
-        self.col_io = [Pin(x, Pin.IN) for x in colpins]
+        self.col_io = [Pin(x, Pin.IN, INPUT_PULL) for x in colpins]
         self.rows = len(rowpins)
         self.cols = len(colpins)
-        self.state = [keystate()] * (self.rows * self.cols)
-        self.debounce_dn = 1
-        self.debounce_up = 2
+        self.state = [keystate() for i in range(self.rows * self.cols)]
         # init rows
         for i in range(self.rows):
-            self.row_io[i].low()
+            self.deselect_row(i)
         self.row = 0
-        self.row_io[0].high()
+        self.select_row(0)
 
-    def rd_col(self):  # read the column pins
-        return [(x.value() == 1) for x in self.col_io]
+    def select_row(self, i):
+        self.row_io[i].value(ROW_SELECT_HIGH)
 
-    def scan_row(self):  # scan the row
-        col = self.rd_col()
+    def deselect_row(self, i):
+        self.row_io[i].value(not ROW_SELECT_HIGH)
+
+    def read_col(self):
+        return [(x.value() == int(ROW_SELECT_HIGH)) for x in self.col_io]
+
+    async def scan_row(self):
+        col = self.read_col()
         key = self.row
         for i in range(self.cols):
             down = col[i]
@@ -57,25 +74,26 @@ class matrix:
                 if not down:
                     ks.set(KEY_STATE_UP)
                 else:
-                    if ks.count >= self.debounce_dn:
+                    if ks.count >= DEBOUNCE_DN_COUNT:
                         ks.set(KEY_STATE_DOWN)
-                        # TODO emit down
+                        await self.queue.put((KEY_STATE_DOWN, key))
                     else:
                         ks.inc()
-            if ks.state == KEY_STATE_DOWN:
+            elif ks.state == KEY_STATE_DOWN:
                 if not down:
                     ks.set(KEY_STATE_WAIT4_UP)
-            if ks.state == KEY_STATE_WAIT4_UP:
+            elif ks.state == KEY_STATE_WAIT4_UP:
                 # wait for n successive key up conditions
                 if down:
                     ks.set(KEY_STATE_DOWN)
                 else:
-                    if ks.count >= self.debounce_up:
+                    if ks.count >= DEBOUNCE_UP_COUNT:
                         ks.set(KEY_STATE_UP)
-                        # TODO emit up
+                        await self.queue.put((KEY_STATE_UP, key))
                     else:
                         ks.inc()
-            if ks.state == KEY_STATE_UP:
+                pass
+            elif ks.state == KEY_STATE_UP:
                 if down:
                     ks.set(KEY_STATE_WAIT4_DOWN)
             else:
@@ -83,11 +101,16 @@ class matrix:
             # next column
             key += self.rows
 
-    def scan(self):  # scan the key matrix
+    async def scan(self):  # scan the key matrix
         while True:
-            self.scan_row()
+            await self.scan_row()
             # next row
-            self.row_io[self.row].low()
+            self.deselect_row(self.row)
             self.row = (self.row + 1) % self.rows
-            self.row_io[self.row].high()
-            time.sleep_ms(ROW_POLL_TIME)
+            self.select_row(self.row)
+            await asyncio.sleep_ms(ROW_POLL_TIME)
+
+
+async def task(event_out, rowpins, colpins):
+    key = matrix(event_out, rowpins, colpins)
+    await key.scan()

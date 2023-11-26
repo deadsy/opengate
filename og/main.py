@@ -5,8 +5,11 @@ import scroll
 import relay
 import sim7600
 import gsm
+import keypad
+import uqueue as queue
 
 import utime as time
+import uasyncio as asyncio
 from machine import UART
 from machine import Pin
 
@@ -25,6 +28,10 @@ modem = sim7600.modem(uart, pwr=11)
 
 # pico led
 led = Pin(25, Pin.OUT)
+
+# keypad
+key_rows = (2, 3, 4, 5)
+key_cols = (7, 8, 9, 10)
 
 
 def relay_test():
@@ -50,11 +57,7 @@ def lcd_test():
         time.sleep_ms(400)
 
 
-def dump(s):
-    print(" ".join(["%02x" % c for c in s]))
-
-
-def main():
+def modem_test():
     modem.setup()
     print(modem)
     gsm.init()
@@ -62,18 +65,34 @@ def main():
     # modem.set_sms_format(1)
     # modem.sms_send_txt("+14087102537", "text message from opengate!")
 
-    modem.set_sms_format(0)
-    modem.sms_send_pdu("+14087102537", "[]{} \xf1\xf2 pdu message from opengate!")
+    # modem.set_sms_format(0)
+    # modem.sms_send_pdu("+14087102537", "[]{} pdu message from opengate!")
 
-    # modem.set_call_voice_device(1)
-    # modem.set_call_loudspeaker_level(5)
-    # modem.make_call("+14087102537")
+    modem.set_call_voice_device(1)
+    modem.set_call_loudspeaker_level(5)
+    modem.make_call("+14087102537")
 
-    print("done")
+
+def dump(s):
+    print(" ".join(["%02x" % c for c in s]))
+
+
+async def main():
+    key_queue = queue.Queue()
+    asyncio.create_task(keypad.task(key_queue, key_rows, key_cols))
 
     while True:
+        print(await key_queue.get())
+
+        """
+        try: 
+            x = await asyncio.wait_for_ms(key_queue.get(), 1000)
+        except asyncio.TimeoutError:
+            print("timeout %d" % to_count)
+            to_count += 1
+        print(x)
         led.toggle()
-        time.sleep_ms(1000)
+"""
 
 
-main()
+asyncio.run(main())
