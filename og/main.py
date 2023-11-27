@@ -6,6 +6,8 @@ import relay
 import sim7600
 import gsm
 import keypad
+import directory
+import cfg
 import uqueue as queue
 
 import utime as time
@@ -78,21 +80,16 @@ def dump(s):
 
 
 async def main():
-    key_queue = queue.Queue()
-    asyncio.create_task(keypad.task(key_queue, key_rows, key_cols))
+    key_queue = queue.Queue()  # key up/down events
+    key = keypad.matrix(key_queue, key_rows, key_cols)
+    asyncio.create_task(key.scan())
+
+    dir_queue = queue.Queue()  # passcode or dialout events
+    dir = directory.lookup(key_queue, dir_queue, cfg.codes, cfg.users)
+    asyncio.create_task(dir.run())
 
     while True:
-        print(await key_queue.get())
-
-        """
-        try: 
-            x = await asyncio.wait_for_ms(key_queue.get(), 1000)
-        except asyncio.TimeoutError:
-            print("timeout %d" % to_count)
-            to_count += 1
-        print(x)
-        led.toggle()
-"""
+        print(await dir_queue.get())
 
 
 asyncio.run(main())

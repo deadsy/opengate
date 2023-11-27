@@ -5,7 +5,7 @@ import utime as time
 import uasyncio as asyncio
 
 # time between row polls (ms)
-ROW_POLL_TIME = 16
+ROW_POLL_TIME = 10
 
 # row select active high/low
 ROW_SELECT_HIGH = True
@@ -76,7 +76,7 @@ class matrix:
                 else:
                     if ks.count >= DEBOUNCE_DN_COUNT:
                         ks.set(KEY_STATE_DOWN)
-                        await self.queue.put((KEY_STATE_DOWN, key))
+                        await self.queue.put((True, key))
                     else:
                         ks.inc()
             elif ks.state == KEY_STATE_DOWN:
@@ -89,7 +89,7 @@ class matrix:
                 else:
                     if ks.count >= DEBOUNCE_UP_COUNT:
                         ks.set(KEY_STATE_UP)
-                        await self.queue.put((KEY_STATE_UP, key))
+                        await self.queue.put((False, key))
                     else:
                         ks.inc()
                 pass
@@ -109,8 +109,3 @@ class matrix:
             self.row = (self.row + 1) % self.rows
             self.select_row(self.row)
             await asyncio.sleep_ms(ROW_POLL_TIME)
-
-
-async def task(event_out, rowpins, colpins):
-    key = matrix(event_out, rowpins, colpins)
-    await key.scan()
